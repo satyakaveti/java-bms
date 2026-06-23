@@ -1,0 +1,2558 @@
+{
+  "filterRoute": "/movies-vijayawada",
+  "meta": {
+    "analytics": {
+      "schema_version": "3.0",
+      "screen_name": "movies_listing",
+      "event": "gtm_allpages",
+      "event_name": "movies_listing_viewed",
+      "event_type": "screen_view",
+      "category": "movies",
+      "product": "movies",
+      "filtervalues": "categories=movies",
+      "is_tvod": "no"
+    },
+    "scrollExpiry": 1500,
+    "ldSchema": {
+      "itemListSchema": {
+        "@context": "http://schema.org",
+        "@type": "ItemList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00489559-vuacrglalf-portrait.jpg",
+            "position": 1,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/maa-inti-bangaaram/ET00489559",
+            "name": "Maa Inti Bangaaram"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00439772-czdmzgbjfx-portrait.jpg",
+            "position": 2,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/peddi/ET00439772",
+            "name": "Peddi"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00501368-abyrgwhxyc-portrait.jpg",
+            "position": 3,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/deewana-telugu/ET00501368",
+            "name": "Deewana (Telugu)"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00494435-dgfpsjweub-portrait.jpg",
+            "position": 4,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/vanda-devullu/ET00494435",
+            "name": "Vanda Devullu"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00475569-jpvjrtlvba-portrait.jpg",
+            "position": 5,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/supergirl/ET00475569",
+            "name": "Supergirl"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00501555-qphlthpglg-portrait.jpg",
+            "position": 6,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/transfer-trimurthulu/ET00501555",
+            "name": "Transfer Trimurthulu"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00442151-qqkwretfrx-portrait.jpg",
+            "position": 7,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/haunted-echoes-of-the-past/ET00442151",
+            "name": "Haunted Echoes of the Past"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00502388-dquhdbdzrw-portrait.jpg",
+            "position": 8,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/balan-the-boy/ET00502388",
+            "name": "Balan: The Boy"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00498645-qgzdwqjpzz-portrait.jpg",
+            "position": 9,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/sing-geetham/ET00498645",
+            "name": "Sing Geetham"
+          },
+          {
+            "@type": "ListItem",
+            "image": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC/et00502945-csnzakatzx-portrait.jpg",
+            "position": 10,
+            "url": "https://in.bookmyshow.com/movies/vijayawada/pathala-guha/ET00502945",
+            "name": "Pathala Guha"
+          }
+        ]
+      },
+      "eventsSchema": [],
+      "moviesSchema": [],
+      "breadcrumbSchema": {
+        "@context": "http://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "item": {
+              "@id": "/explore/home/{RegionSlug}",
+              "name": "Home"
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "item": {
+              "@id": "/explore/movies{HyphenPrefixRegionSlug}",
+              "name": "Movies"
+            }
+          }
+        ]
+      }
+    },
+    "experiments": {}
+  },
+  "header": {
+    "title": "Movies in Vijayawada",
+    "widget": {
+      "type": "advertisement",
+      "styleId": "-4181847489975305789",
+      "adtechId": "AD_MOVIE_LISTING_CAROUSEL"
+    },
+    "expandedRatio": 0.0,
+    "collapsedHeight": 0,
+    "expandedHeaderHeight": 0,
+    "showExpandedHeader": false,
+    "actions": [
+      {
+        "iconUrl": "https://assets-in.bmscdn.com/discovery-catalog/icons/tr:w-72,h-72/search-202310260243.png",
+        "ctaUrl": "https://in.bookmyshow.com/search?cat=MT",
+        "title": "search",
+        "analytics": {
+          "schema_version": "3.0",
+          "screen_name": "movies_listing",
+          "event_name": "search_clicked",
+          "event_type": "click",
+          "product": "search",
+          "filtervalues": "categories=movies",
+          "label": "SEARCH",
+          "is_tvod": "",
+          "metadata": ""
+        }
+      }
+    ],
+    "translucent": true,
+    "backgroundPosition": ""
+  },
+  "actions": {
+    "browseVenues": {
+      "iconUrl": "https://assets-in.bmscdn.com/discovery-catalog/icons/tr:w-48,h-48/location-pin-202007060447.png",
+      "label": "Browse by Cinemas",
+      "backgroundColor": "#DC3558",
+      "textColor": "#FFFFFF",
+      "ctaUrl": "https://in.bookmyshow.com/vijayawada/cinemas",
+      "analytics": {
+        "schema_version": "3.0",
+        "screen_name": "movies_listing",
+        "event": "gtm_std_event",
+        "event_name": "venues_clicked",
+        "event_type": "click",
+        "event_action": "",
+        "category": "movies",
+        "product": "movies",
+        "filtervalues": "categories=movies",
+        "is_tvod": "",
+        "metadata": ""
+      }
+    },
+    "filters": {
+      "iconUrl": "https://assets-in.bmscdn.com/discovery-catalog/icons/tr:w-48,h-48/filter-white-202007011722.png",
+      "backgroundColor": "#DC3558",
+      "indicatorColor": "#FFFFFF",
+      "analytics": {
+        "schema_version": "3.0",
+        "screen_name": "movies_listing",
+        "event": "gtm_std_event",
+        "event_name": "movie_filter_applied",
+        "event_type": "click",
+        "event_action": "filter_icon",
+        "category": "movies",
+        "product": "movies",
+        "filtervalues": "categories=movies",
+        "type": "filter",
+        "is_tvod": "",
+        "metadata": ""
+      }
+    },
+    "search": {
+      "iconUrl": "https://assets-in.bmscdn.com/discovery-catalog/icons/tr:w-72,h-72/search-202007060430.png",
+      "ctaUrl": "https://in.bookmyshow.com/search?cat=MT"
+    }
+  },
+  "styles": [
+    {
+      "id": "5930461786190449814",
+      "padding": "16,0,32,0",
+      "type": "widget",
+      "headerContainer": {
+        "padding": "0,0,0,0",
+        "margin": "0,0,8,0"
+      },
+      "cardsContainer": {
+        "padding": "0,0,0,0"
+      },
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom",
+      "indicatorProperties": {
+        "colors": {
+          "active": "",
+          "inactive": ""
+        }
+      }
+    },
+    {
+      "id": "-6486024144083659972",
+      "padding": "0,0,0,0",
+      "type": "card",
+      "imageContainer": {
+        "aspectRatio": 12.0,
+        "shimmer": false,
+        "border": {
+          "cornerRadius": "5,5,5,5",
+          "opacity": 1.0,
+          "width": 0.0
+        }
+      },
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "widget-listings-movies",
+      "padding": "24,0,24,0",
+      "type": "widget",
+      "cardsContainer": {
+        "padding": "0,0,0,0"
+      },
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "widget-title-01",
+      "type": "text",
+      "font": "subtitle-regular",
+      "fontColor": "#222222",
+      "lineMargin": "4,0,0,0",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "widget-scroll-cta-01",
+      "type": "text",
+      "font": "body-regular",
+      "fontColor": "#0378FF",
+      "lineMargin": "0,0,0,0",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "listings-movie-card-style",
+      "type": "card",
+      "imageContainer": {
+        "aspectRatio": 0.5882352941,
+        "margin": "0,0,16,0",
+        "shimmer": false,
+        "border": {
+          "cornerRadius": "12,12,12,12",
+          "opacity": 1.0,
+          "width": 0.0
+        }
+      },
+      "textContainer": {
+        "padding": "8,0,0,0",
+        "elevation": 1
+      },
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "card-title-01",
+      "type": "text",
+      "font": "subtitle-large",
+      "fontColor": "#000000",
+      "lineMargin": "0,0,4,0",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "card-muted-text-01",
+      "type": "text",
+      "font": "body-regular",
+      "fontColor": "#666666",
+      "lineMargin": "0,0,4,0",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "card-venue-muted-text-01",
+      "type": "text",
+      "font": "body-large",
+      "fontColor": "#333333",
+      "lineMargin": "0,0,4,0",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "header-title-01",
+      "type": "text",
+      "font": "title",
+      "fontColor": "#222222",
+      "lineMargin": "8,4,0,16",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "header-subtitle-01",
+      "type": "text",
+      "font": "tiny-medium",
+      "fontColor": "#DC354B",
+      "lineMargin": "0,0,0,16",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "listing-header-title-01",
+      "type": "text",
+      "font": "subtitle-regular",
+      "fontColor": "#222222",
+      "lineMargin": "0,0,0,16",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "listing-header-subtitle-01",
+      "type": "text",
+      "font": "body-small",
+      "fontColor": "#666666",
+      "lineMargin": "0,0,0,16",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "vcp-header-title-01",
+      "type": "text",
+      "font": "subtitle-large",
+      "fontColor": "#222222",
+      "lineMargin": "4,4,4,0",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "tooltip-style",
+      "padding": "12,12,12,12",
+      "margin": "0,16,0,16",
+      "type": "tooltip",
+      "background": {
+        "color": "#3E6EEA",
+        "opacity": 1.0
+      },
+      "font": "extra-tiny-medium",
+      "fontColor": "#ffffff",
+      "border": {
+        "cornerRadius": "24,24,24,24"
+      },
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "tooltip-style-ios",
+      "padding": "12,12,12,12",
+      "margin": "0,0,0,0",
+      "type": "tooltip",
+      "background": {
+        "color": "#3E6EEA",
+        "opacity": 1.0
+      },
+      "font": "extra-tiny-medium",
+      "fontColor": "#ffffff",
+      "border": {
+        "cornerRadius": "16,16,16,16"
+      },
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "action-style-search",
+      "type": "action",
+      "height": 24.0,
+      "imageContainer": {
+        "padding": "0,0,0,0",
+        "margin": "0,16,0,0",
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "center",
+      "imageVerticalAlignment": "bottom",
+      "width": 24.0
+    },
+    {
+      "id": "action-style-notification",
+      "type": "action",
+      "height": 24.0,
+      "imageContainer": {
+        "padding": "4,4,4,4",
+        "margin": "0,16,0,0",
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom",
+      "width": 24.0
+    },
+    {
+      "id": "action-style-bmsclub",
+      "type": "action",
+      "height": 36.0,
+      "imageContainer": {
+        "padding": "0,0,0,0",
+        "margin": "0,0,0,0",
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom",
+      "width": 48.0
+    },
+    {
+      "id": "action-style-indicator",
+      "type": "action",
+      "background": {
+        "color": "#ffffff"
+      },
+      "height": 0.0,
+      "imageContainer": {
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom",
+      "width": 0.0
+    },
+    {
+      "id": "filter-styleid",
+      "type": "action",
+      "background": {
+        "color": "#DC3558"
+      },
+      "height": 0.0,
+      "imageContainer": {
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom",
+      "width": 0.0
+    },
+    {
+      "id": "browse-by-venues-text-styleid",
+      "type": "text",
+      "font": "body-regular",
+      "fontColor": "#ffffff",
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "browse-by-venues-styleid",
+      "type": "action",
+      "background": {
+        "color": "#DC3558"
+      },
+      "height": 0.0,
+      "imageContainer": {
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom",
+      "width": 0.0
+    },
+    {
+      "id": "badge-style-notification",
+      "type": "action",
+      "background": {
+        "color": "#DC3558"
+      },
+      "height": 0.0,
+      "font": "body-small",
+      "imageContainer": {
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom",
+      "width": 0.0
+    },
+    {
+      "id": "badge-text-style-notification",
+      "padding": "0,2,0,2",
+      "type": "action",
+      "height": 0.0,
+      "font": "overline",
+      "fontColor": "#ffffff",
+      "imageContainer": {
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "center",
+      "imageVerticalAlignment": "bottom",
+      "width": 0.0
+    },
+    {
+      "id": "action-style-qr",
+      "type": "action",
+      "height": 24.0,
+      "imageContainer": {
+        "padding": "0,0,0,0",
+        "margin": "0,16,0,0",
+        "shimmer": false
+      },
+      "shimmer": false,
+      "horizontalAlignment": "left",
+      "imageVerticalAlignment": "bottom",
+      "width": 24.0
+    },
+    {
+      "id": "-4181847489975305789",
+      "aspectRatio": 3.9,
+      "padding": "0,0,0,0",
+      "type": "widget",
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom",
+      "indicatorProperties": {
+        "colors": {
+          "active": "",
+          "inactive": ""
+        }
+      }
+    },
+    {
+      "id": "-6865563212781675764",
+      "type": "card",
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom"
+    },
+    {
+      "id": "li-for-le-title-image",
+      "type": "image",
+      "height": 24.0,
+      "shimmer": false,
+      "imageVerticalAlignment": "bottom",
+      "width": 24.0
+    }
+  ],
+  "listings": [
+    {
+      "id": "COMING_SOON_WEB",
+      "type": "flexbox",
+      "isSticky": false,
+      "styleId": "5930461786190449814",
+      "itemsPerRow": 1,
+      "horizontalSpacing": 32,
+      "verticalSpacing": 8,
+      "matchMaxCardHeight": true,
+      "cards": [
+        {
+          "id": "9b1488c8-4c8d-481e-93d4-5f9233b1cf40",
+          "type": "vertical",
+          "styleId": "-6486024144083659972",
+          "ctaUrl": "https://in.bookmyshow.com/explore/upcoming-movies-vijayawada?referrerBase=movies",
+          "text": [],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/collections/tr:w-1440,h-120/coming-soon-web-collection-202012090733.png",
+            "altText": "Coming Soon"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "coming_soon_web_coming-soon",
+            "in_widget_position": 1,
+            "schema_version": "3.0",
+            "widget_id": "COMING_SOON_WEB",
+            "widget_title": "COMING_SOON_WEB",
+            "display_position": 1,
+            "title": "Coming Soon",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "region_code": "VIJA",
+            "category": "movies",
+            "tags": "",
+            "genre": "",
+            "language": "",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "cardDivisions": []
+        }
+      ],
+      "analytics": {
+        "id": "coming_soon_web",
+        "schema_version": "3.0",
+        "is_tvod": "",
+        "metadata": ""
+      },
+      "impressionAnalytics": {
+        "schema_version": "3.0",
+        "widget_id": "COMING_SOON_WEB",
+        "widget_title": "COMING_SOON_WEB",
+        "display_position": 1,
+        "screen_name": "movies_listing",
+        "event": "gtm_allpages",
+        "event_name": "widget_viewed",
+        "event_type": "impression",
+        "category": "",
+        "product": "movies",
+        "filtervalues": "categories=movies",
+        "is_tvod": "",
+        "metadata": ""
+      },
+      "showIndicators": false,
+      "childWidgets": []
+    },
+    {
+      "id": "listing-desktop-1",
+      "type": "flexbox",
+      "isSticky": false,
+      "styleId": "widget-listings-movies",
+      "alignItems": "left",
+      "itemsPerRow": 4,
+      "horizontalSpacing": 32,
+      "verticalSpacing": 32,
+      "matchMaxCardHeight": false,
+      "cards": [
+        {
+          "id": "EG00486896",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/maa-inti-bangaaram/ET00489559",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Maa Inti Bangaaram"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA13+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OS8xMCAgMTkuNksrIFZvdGVz,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00489559-vuacrglalf-portrait.jpg",
+            "altText": "Maa Inti Bangaaram"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-1_eg00486896_et00489559",
+            "in_widget_position": 1,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-1",
+            "widget_title": "LISTING-DESKTOP-1",
+            "display_position": 2,
+            "title": "Maa Inti Bangaaram",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00489559",
+            "event_group": "EG00486896",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "action|comedy|family|thriller",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Maa Inti Bangaaram",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00437770",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/peddi/ET00439772",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Peddi"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA16+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu, Hindi, Kannada, Malayalam, Tamil"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@like_202006280402.png,lx-24,ly-617,w-29,l-end:l-text,ie-NjMzSysgTGlrZXM%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00439772-czdmzgbjfx-portrait.jpg",
+            "altText": "Peddi"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-1_eg00437770_et00439772",
+            "in_widget_position": 2,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-1",
+            "widget_title": "LISTING-DESKTOP-1",
+            "display_position": 2,
+            "title": "Peddi",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00439772",
+            "event_group": "EG00437770",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "action|drama|sports",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Peddi",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00498511",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/deewana-telugu/ET00501368",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Deewana (Telugu)"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "A"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OS41LzEwICAxLjVLKyBWb3Rlcw%3D%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00501368-abyrgwhxyc-portrait.jpg",
+            "altText": "Deewana (Telugu)"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-1_eg00498511_et00501368",
+            "in_widget_position": 3,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-1",
+            "widget_title": "LISTING-DESKTOP-1",
+            "display_position": 2,
+            "title": "Deewana (Telugu)",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00501368",
+            "event_group": "EG00498511",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "drama|romantic",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Deewana (Telugu)",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00491688",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/vanda-devullu/ET00494435",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Vanda Devullu"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA13+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OS4yLzEwICA3MCsgVm90ZXM%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00494435-dgfpsjweub-portrait.jpg",
+            "altText": "Vanda Devullu"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-1_eg00491688_et00494435",
+            "in_widget_position": 4,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-1",
+            "widget_title": "LISTING-DESKTOP-1",
+            "display_position": 2,
+            "title": "Vanda Devullu",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00494435",
+            "event_group": "EG00491688",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "drama|family|social",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Vanda Devullu",
+          "cardDivisions": []
+        }
+      ]
+    },
+    {
+      "id": "listing-desktop-2",
+      "type": "flexbox",
+      "isSticky": false,
+      "styleId": "widget-listings-movies",
+      "alignItems": "left",
+      "itemsPerRow": 4,
+      "horizontalSpacing": 32,
+      "verticalSpacing": 32,
+      "matchMaxCardHeight": false,
+      "cards": [
+        {
+          "id": "EG00473059",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/supergirl/ET00475569",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Supergirl"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA16+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "English, Hindi, Tamil, Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@like_202006280402.png,lx-24,ly-617,w-29,l-end:l-text,ie-NTEuM0srIExpa2Vz,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00475569-jpvjrtlvba-portrait.jpg",
+            "altText": "Supergirl"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-2_eg00473059_et00475569",
+            "in_widget_position": 1,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-2",
+            "widget_title": "LISTING-DESKTOP-2",
+            "display_position": 3,
+            "title": "Supergirl",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00475569",
+            "event_group": "EG00473059",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "action|adventure|sci-fi",
+            "language": "english",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Supergirl",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00498694",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/transfer-trimurthulu/ET00501555",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Transfer Trimurthulu"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA16+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OC44LzEwICA5NSsgVm90ZXM%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00501555-qphlthpglg-portrait.jpg",
+            "altText": "Transfer Trimurthulu"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-2_eg00498694_et00501555",
+            "in_widget_position": 2,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-2",
+            "widget_title": "LISTING-DESKTOP-2",
+            "display_position": 3,
+            "title": "Transfer Trimurthulu",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00501555",
+            "event_group": "EG00498694",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "action|comedy|suspense",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Transfer Trimurthulu",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00440077",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/haunted-echoes-of-the-past/ET00442151",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Haunted Echoes of the Past"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "A"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Hindi, Telugu, Tamil"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-Ni43LzEwICA5LjFLKyBWb3Rlcw%3D%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00442151-qqkwretfrx-portrait.jpg",
+            "altText": "Haunted Echoes of the Past"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-2_eg00440077_et00442151",
+            "in_widget_position": 3,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-2",
+            "widget_title": "LISTING-DESKTOP-2",
+            "display_position": 3,
+            "title": "Haunted Echoes of the Past",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00442151",
+            "event_group": "EG00440077",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "horror|romantic|thriller",
+            "language": "hindi",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Haunted Echoes of the Past",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00499500",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/balan-the-boy/ET00502388",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Balan: The Boy"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA16+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Malayalam, Kannada, Hindi, Tamil, Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@like_202006280402.png,lx-24,ly-617,w-29,l-end:l-text,ie-MTYuN0srIExpa2Vz,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00502388-dquhdbdzrw-portrait.jpg",
+            "altText": "Balan: The Boy"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-2_eg00499500_et00502388",
+            "in_widget_position": 4,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-2",
+            "widget_title": "LISTING-DESKTOP-2",
+            "display_position": 3,
+            "title": "Balan: The Boy",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00502388",
+            "event_group": "EG00499500",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "drama|mystery|psychological|thriller",
+            "language": "malayalam",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Balan: The Boy",
+          "cardDivisions": []
+        }
+      ]
+    },
+    {
+      "id": "listing-desktop-3",
+      "type": "flexbox",
+      "isSticky": false,
+      "styleId": "widget-listings-movies",
+      "alignItems": "left",
+      "itemsPerRow": 4,
+      "horizontalSpacing": 32,
+      "verticalSpacing": 32,
+      "matchMaxCardHeight": false,
+      "cards": [
+        {
+          "id": "EG00495851",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/sing-geetham/ET00498645",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Sing Geetham"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "U"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OC44LzEwICA3LjRLKyBWb3Rlcw%3D%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00498645-qgzdwqjpzz-portrait.jpg",
+            "altText": "Sing Geetham"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-3_eg00495851_et00498645",
+            "in_widget_position": 1,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-3",
+            "widget_title": "LISTING-DESKTOP-3",
+            "display_position": 4,
+            "title": "Sing Geetham",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00498645",
+            "event_group": "EG00495851",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "fantasy|musical|supernatural",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Sing Geetham",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00500023",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/pathala-guha/ET00502945",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Pathala Guha"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "A"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OC45LzEwICBFYXJseSBSYXRpbmdz,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00502945-csnzakatzx-portrait.jpg",
+            "altText": "Pathala Guha"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-3_eg00500023_et00502945",
+            "in_widget_position": 2,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-3",
+            "widget_title": "LISTING-DESKTOP-3",
+            "display_position": 4,
+            "title": "Pathala Guha",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00502945",
+            "event_group": "EG00500023",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "adventure|horror|thriller",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Pathala Guha",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00478362",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/obsession/ET00480914",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Obsession "
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "A"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "English"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OC42LzEwICA5MC44SysgVm90ZXM%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00480914-tybyavqknb-portrait.jpg",
+            "altText": "Obsession "
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-3_eg00478362_et00480914",
+            "in_widget_position": 3,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-3",
+            "widget_title": "LISTING-DESKTOP-3",
+            "display_position": 4,
+            "title": "Obsession ",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00480914",
+            "event_group": "EG00478362",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "horror|thriller",
+            "language": "english",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Obsession ",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00488698",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/cocktail-2/ET00491386",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Cocktail 2"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "A"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Hindi"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OC4xLzEwICAyMS4xSysgVm90ZXM%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00491386-gamhtmercb-portrait.jpg",
+            "altText": "Cocktail 2"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-3_eg00488698_et00491386",
+            "in_widget_position": 4,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-3",
+            "widget_title": "LISTING-DESKTOP-3",
+            "display_position": 4,
+            "title": "Cocktail 2",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00491386",
+            "event_group": "EG00488698",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "comedy|drama|romantic",
+            "language": "hindi",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Cocktail 2",
+          "cardDivisions": []
+        }
+      ]
+    },
+    {
+      "id": "listing-desktop-4",
+      "type": "flexbox",
+      "isSticky": false,
+      "styleId": "widget-listings-movies",
+      "alignItems": "left",
+      "itemsPerRow": 4,
+      "horizontalSpacing": 32,
+      "verticalSpacing": 32,
+      "matchMaxCardHeight": false,
+      "cards": [
+        {
+          "id": "EG00045719",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/okkadu/ET00065514",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Okkadu"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "U"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OS44LzEwICAyNUsrIFZvdGVz,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end:l-image,i-discovery-catalog@@icons@@re-release-tag.png,lx-N6,t-false,lfo-top_right,w-180,l-end/et00065514-zqvyghtudg-portrait.jpg",
+            "altText": "Okkadu"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-4_eg00045719_et00065514",
+            "in_widget_position": 1,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-4",
+            "widget_title": "LISTING-DESKTOP-4",
+            "display_position": 5,
+            "title": "Okkadu",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00065514",
+            "event_group": "EG00045719",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "online-streaming|re_releases",
+            "genre": "action|drama|romantic|sports",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Okkadu",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00488772",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/main-vaapas-aaunga/ET00491460",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Main Vaapas Aaunga"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA16+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Hindi"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OC45LzEwICAxNi44SysgVm90ZXM%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00491460-unceglaqcq-portrait.jpg",
+            "altText": "Main Vaapas Aaunga"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-4_eg00488772_et00491460",
+            "in_widget_position": 2,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-4",
+            "widget_title": "LISTING-DESKTOP-4",
+            "display_position": 5,
+            "title": "Main Vaapas Aaunga",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00491460",
+            "event_group": "EG00488772",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "drama|period|romantic",
+            "language": "hindi",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Main Vaapas Aaunga",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00311567",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/hanuman-3d/ET00504181",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Hanu-Man (3D)"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Telugu, Hindi, Tamil, Kannada, Malayalam"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OS40LzEwICA0NjBLKyBWb3Rlcw%3D%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end:l-image,i-discovery-catalog@@icons@@re-release-tag.png,lx-N6,t-false,lfo-top_right,w-180,l-end/et00504181-xclcxlelpl-portrait.jpg",
+            "altText": "Hanu-Man (3D)"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-4_eg00311567_et00504181",
+            "in_widget_position": 3,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-4",
+            "widget_title": "LISTING-DESKTOP-4",
+            "display_position": 5,
+            "title": "Hanu-Man (3D)",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00504181",
+            "event_group": "EG00311567",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "re_releases",
+            "genre": "action|adventure|fantasy",
+            "language": "telugu",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Hanu-Man (3D)",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00480212",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/toy-story-5/ET00482787",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Toy Story 5"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "U"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "English, Hindi"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OC45LzEwICAyLjNLKyBWb3Rlcw%3D%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00482787-fvfmbdamzj-portrait.jpg",
+            "altText": "Toy Story 5"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-4_eg00480212_et00482787",
+            "in_widget_position": 4,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-4",
+            "widget_title": "LISTING-DESKTOP-4",
+            "display_position": 5,
+            "title": "Toy Story 5",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00482787",
+            "event_group": "EG00480212",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "adventure|animation|comedy|family",
+            "language": "english",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Toy Story 5",
+          "cardDivisions": []
+        }
+      ]
+    },
+    {
+      "id": "listing-desktop-5",
+      "type": "flexbox",
+      "isSticky": false,
+      "styleId": "widget-listings-movies",
+      "alignItems": "left",
+      "itemsPerRow": 4,
+      "horizontalSpacing": 32,
+      "verticalSpacing": 32,
+      "matchMaxCardHeight": false,
+      "cards": [
+        {
+          "id": "EG00495623",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/backrooms/ET00498411",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Backrooms"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "A"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "English"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-Ny4zLzEwICA2SysgVm90ZXM%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00498411-dubbvjlfcn-portrait.jpg",
+            "altText": "Backrooms"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-5_eg00495623_et00498411",
+            "in_widget_position": 1,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-5",
+            "widget_title": "LISTING-DESKTOP-5",
+            "display_position": 6,
+            "title": "Backrooms",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00498411",
+            "event_group": "EG00495623",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "horror|sci-fi",
+            "language": "english",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Backrooms",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00499101",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/the-furious/ET00501983",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "The Furious"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "A"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "English"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-OS4yLzEwICAxLjRLKyBWb3Rlcw%3D%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00501983-pghdljkqhr-portrait.jpg",
+            "altText": "The Furious"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-5_eg00499101_et00501983",
+            "in_widget_position": 2,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-5",
+            "widget_title": "LISTING-DESKTOP-5",
+            "display_position": 6,
+            "title": "The Furious",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00501983",
+            "event_group": "EG00499101",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "action|thriller",
+            "language": "english",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "The Furious",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00478363",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/disclosure-day/ET00480915",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Disclosure Day"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA13+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "English"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@star-icon-202203010609.png,lx-24,ly-615,w-29,l-end:l-text,ie-Ny42LzEwICAxMUsrIFZvdGVz,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00480915-tjslqfchkp-portrait.jpg",
+            "altText": "Disclosure Day"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-5_eg00478363_et00480915",
+            "in_widget_position": 3,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-5",
+            "widget_title": "LISTING-DESKTOP-5",
+            "display_position": 6,
+            "title": "Disclosure Day",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00480915",
+            "event_group": "EG00478363",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "drama|sci-fi|thriller",
+            "language": "english",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Disclosure Day",
+          "cardDivisions": []
+        },
+        {
+          "id": "EG00368182",
+          "type": "vertical",
+          "styleId": "listings-movie-card-style",
+          "ctaUrl": "https://in.bookmyshow.com/movies/vijayawada/welcome-to-the-jungle/ET00369379",
+          "text": [
+            {
+              "maxLines": 2,
+              "styleId": "card-title-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Welcome To The Jungle"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "UA16+"
+                }
+              ]
+            },
+            {
+              "maxLines": 1,
+              "styleId": "card-muted-text-01",
+              "components": [
+                {
+                  "type": "text",
+                  "text": "Hindi"
+                }
+              ]
+            }
+          ],
+          "metaImages": [],
+          "image": {
+            "url": "https://assets-in.bmscdn.com/discovery-catalog/events/tr:w-400,h-600,bg-CCCCCC,e-usm-2-2-0.5-0.008:w-400.0,h-660.0,cm-pad_resize,bg-000000,fo-top:l-image,i-discovery-catalog@@icons@@like_202006280402.png,lx-24,ly-617,w-29,l-end:l-text,ie-MTA3SysgTGlrZXM%3D,fs-29,co-FFFFFF,ly-612,lx-70,pa-8_0_0_0,l-end/et00369379-faqwzaebqc-portrait.jpg",
+            "altText": "Welcome To The Jungle"
+          },
+          "tags": [],
+          "analytics": {
+            "id": "listing-desktop-5_eg00368182_et00369379",
+            "in_widget_position": 4,
+            "schema_version": "3.0",
+            "widget_id": "listing-desktop-5",
+            "widget_title": "LISTING-DESKTOP-5",
+            "display_position": 6,
+            "title": "Welcome To The Jungle",
+            "screen_name": "movies_listing",
+            "event": "gtm_std_event",
+            "event_name": "movie_card_clicked",
+            "event_type": "click",
+            "event_code": "ET00369379",
+            "event_group": "EG00368182",
+            "region_code": "VIJA",
+            "category": "",
+            "tags": "",
+            "genre": "action|comedy",
+            "language": "hindi",
+            "product": "movies",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "impressionAnalytics": {
+            "schema_version": "3.0",
+            "screen_name": "movies_listing",
+            "event_name": "movie_card_viewed",
+            "event_type": "impression",
+            "is_tvod": "",
+            "metadata": ""
+          },
+          "buttons": [],
+          "seoText": "Welcome To The Jungle",
+          "cardDivisions": []
+        }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "queryParam": "languages",
+      "title": "Languages",
+      "quickFilterIndex": 1,
+      "items": [
+        {
+          "code": "telugu",
+          "label": "Telugu",
+          "quickFilter": true,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "english",
+          "label": "English",
+          "quickFilter": true,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "hindi",
+          "label": "Hindi",
+          "quickFilter": true,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "tamil",
+          "label": "Tamil",
+          "quickFilter": true,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "malayalam",
+          "label": "Malayalam",
+          "quickFilter": true,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "queryParam": "genres",
+      "title": "Genres",
+      "quickFilterIndex": 2,
+      "items": [
+        {
+          "code": "action",
+          "label": "Action",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "drama",
+          "label": "Drama",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "thriller",
+          "label": "Thriller",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "comedy",
+          "label": "Comedy",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "romantic",
+          "label": "Romantic",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "adventure",
+          "label": "Adventure",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "horror",
+          "label": "Horror",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "family",
+          "label": "Family",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "sci-fi",
+          "label": "Sci-Fi",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "fantasy",
+          "label": "Fantasy",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "sports",
+          "label": "Sports",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "animation",
+          "label": "Animation",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "musical",
+          "label": "Musical",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "mystery",
+          "label": "Mystery",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "period",
+          "label": "Period",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "psychological",
+          "label": "Psychological",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "social",
+          "label": "Social",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "supernatural",
+          "label": "Supernatural",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "suspense",
+          "label": "Suspense",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "queryParam": "format",
+      "title": "Format",
+      "quickFilterIndex": 5,
+      "items": [
+        {
+          "code": "2D",
+          "label": "2D",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "3D",
+          "label": "3D",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        },
+        {
+          "code": "IMAX-2D",
+          "label": "IMAX 2D",
+          "quickFilter": false,
+          "selection": "multiple",
+          "selected": false,
+          "custom": false,
+          "disabled": false
+        }
+      ]
+    }
+  ],
+  "sortBy": [],
+  "breadCrumbs": [
+    {
+      "label": "Home",
+      "route": "/explore/home/vijayawada"
+    },
+    {
+      "label": "Movies",
+      "route": "/explore/movies-vijayawada"
+    }
+  ],
+  "responseHeader": {
+    "cacheTagRouteSlug": "movies",
+    "recruitedExperiments": "",
+    "skipCdnCache": false,
+    "isListingPage": true
+  },
+  "bottomSheet": {}
+}
