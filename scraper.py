@@ -36,6 +36,7 @@ def get_random_proxy():
     return {"http": proxy_url, "https": proxy_url}
 
 def get_with_retry(url, headers, retries=5, **kwargs):
+    print(f"    -> [GET] Calling API: {url}")
     for attempt in range(retries):
         proxy = get_random_proxy()
         try:
