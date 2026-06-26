@@ -1,4 +1,4 @@
-import requests
+from curl_cffi import requests
 import datetime
 import traceback
 import urllib.parse
@@ -16,7 +16,7 @@ HEADERS_BASE = {
 def fetch_regions():
     url = "https://in.bookmyshow.com/api/explore/v1/discover/regions"
     regions = []
-    res = requests.get(url, headers=HEADERS_BASE, timeout=10)
+    res = requests.get(url, headers=HEADERS_BASE, timeout=10, impersonate="chrome110")
     res.raise_for_status()
     data = res.json()
     bms_data = data.get("BookMyShow", {})
@@ -35,9 +35,13 @@ def fetch_regions():
     return regions
 
 def fetch_movies_by_city(region_slug, region_code, lat, lon):
-    url = f"https://in.bookmyshow.com/api/explore/v1/discover/movies-{region_slug}?region={region_code}&cat=MT&embedded=true&lat={lat}&lon={lon}"
-    movies = []
-    res = requests.get(url, headers=HEADERS_BASE, timeout=10)
+    headers = HEADERS_BASE.copy()
+    headers.update({
+        'x-region-code': region_code,
+        'x-region-slug': region_slug,
+        'x-bms-id': '1.61267030.1782201813946'
+    })
+    res = requests.get(url, headers=headers, timeout=10, impersonate="chrome110")
     res.raise_for_status()
     data = res.json()
     
@@ -66,11 +70,11 @@ def fetch_showtimes(event_code, region_code, lat, lon):
         'x-longitude': str(lon)
     })
     
-    static_res = requests.get(static_url, headers=headers, timeout=10)
+    static_res = requests.get(static_url, headers=headers, timeout=10, impersonate="chrome110")
     static_res.raise_for_status()
     static_data = static_res.json()
     
-    dynamic_res = requests.get(dynamic_url, headers=headers, timeout=10)
+    dynamic_res = requests.get(dynamic_url, headers=headers, timeout=10, impersonate="chrome110")
     dynamic_res.raise_for_status()
     dynamic_data = dynamic_res.json()
     

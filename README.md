@@ -80,6 +80,9 @@ You must have Python 3.11 or higher installed.
 
 1. **Start the FastAPI Server:**
    ```bash
+   
+   lsof -ti:8000 | xargs kill -9
+
    source venv/bin/activate
    
    python3 main.py
