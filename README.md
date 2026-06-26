@@ -80,6 +80,8 @@ You must have Python 3.11 or higher installed.
 
 1. **Start the FastAPI Server:**
    ```bash
+   source venv/bin/activate
+   
    python3 main.py
    ```
    *(Alternatively: `uvicorn main:app --reload`)*
