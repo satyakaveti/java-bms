@@ -1,4 +1,4 @@
-# java
+# BookMyShow Data Analyzer (Python/FastAPI)
 
 This document details the architectural approach, tech stack, and data flow for the BookMyShow Analyzer project. The system is designed to handle the complexities of scraping data across multiple regions without timing out client requests, and crucially, **without relying on any external dependencies like Redis or databases**.
 
@@ -14,24 +14,22 @@ graph TD
     API[FastAPI Server]
     Memory[(In-Memory Dictionary)]
     Worker[FastAPI BackgroundTask]
-    Playwright[Playwright Headless Browser]
-    BMS[BookMyShow Website/Internal API]
+    BMS[BookMyShow Internal APIs]
 
     Client -- "1. POST /analyze (movie)" --> API
     API -- "2. Creates Job ID" --> Memory
     API -- "3. Starts BackgroundTask" --> Worker
     API -- "4. Returns Job ID" --> Client
     
-    Worker -- "5. Navigates & Intercepts" --> Playwright
-    Playwright -- "6. Fetches Data" --> BMS
-    Playwright -- "7. Returns Raw Data" --> Worker
+    Worker -- "5. Executes HTTP Requests" --> BMS
+    BMS -- "6. Returns JSON Data" --> Worker
     
-    Worker -- "8. Aggregates & Calculates" --> Worker
-    Worker -- "9. Updates Final JSON" --> Memory
+    Worker -- "7. Aggregates & Calculates" --> Worker
+    Worker -- "8. Updates Final JSON" --> Memory
     
-    Client -- "10. GET /analyze/status (Job ID)" --> API
-    API -- "11. Reads Result" --> Memory
-    API -- "12. Returns Final JSON" --> Client
+    Client -- "9. GET /analyze/status (Job ID)" --> API
+    API -- "10. Reads Result" --> Memory
+    API -- "11. Returns Final JSON" --> Client
 ```
 
 ---
@@ -40,29 +38,73 @@ graph TD
 
 | Component | Technology | Description & Justification |
 | :--- | :--- | :--- |
-| **Language** | Python 3.11+ | The industry standard for scraping and data processing. |
+| **Language** | Python 3.11+ | The industry standard for data processing and REST APIs. |
 | **API Framework** | FastAPI | High performance, built-in async/await support, and automatic OpenAPI (Swagger) docs. |
-| **Scraping Engine** | Playwright (Python) | Modern headless browser automation. Better than Selenium at intercepting background network requests (XHR/Fetch) made by the BMS frontend. |
+| **Scraping Engine** | `requests` (Python) | Direct API calls using custom headers to bypass blocking. Faster and less memory-intensive than headless browsers. |
 | **Async Execution** | FastAPI `BackgroundTasks` | Built directly into FastAPI. Allows a function to run in the background after the HTTP response has been returned. No Celery required. |
 | **State Management** | Python `dict` (In-Memory) | A global Python dictionary maps `job_id` to its status and final result. No Redis or external DB required. |
 
 ---
 
-## 3. The Scraping Strategy (Core Logic)
+## 3. Installation & Setup
 
-BookMyShow uses internal APIs heavily. The most efficient way to get accurate data is **Network Interception** rather than raw HTML parsing.
+### Installing Python
+You must have Python 3.11 or higher installed. 
+- **Mac**: `brew install python`
+- **Windows**: Download the installer from [python.org](https://www.python.org/downloads/) (ensure you check "Add Python to PATH" during installation).
+- **Linux (Ubuntu/Debian)**: `sudo apt install python3 python3-pip python3-venv`
 
-### Workflow:
-1.  **Launch Browser:** Playwright opens a headless Chromium instance in the background task.
-2.  **Navigate to Movie:** Navigate to the specific movie page.
-3.  **Intercept Requests:** Instruct Playwright to listen for network responses matching BMS's internal theater API endpoints.
-4.  **Iterate Regions:** The script simulates user clicks or manipulates parameters to switch the "City" context sequentially.
-5.  **Extract Data:** For each intercepted JSON response, extract: Theater Name, Capacity, Booked Seats, and Ticket Price.
-6.  **Calculate & Aggregate:** Calculate `Occupancy`, `Occupancy Percentage`, and `Net Collection`.
+### Project Setup
+1. **Clone or navigate to the project directory:**
+   ```bash
+   cd path/to/java-bms
+   ```
+
+2. **Create a Virtual Environment (Recommended):**
+   ```bash
+   python3 -m venv venv
+   ```
+
+3. **Activate the Virtual Environment:**
+   - On **Mac/Linux**: `source venv/bin/activate`
+   - On **Windows**: `venv\Scripts\activate`
+
+4. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ---
 
-## 4. API Specifications
+## 4. How to Run
+
+1. **Start the FastAPI Server:**
+   ```bash
+   python3 main.py
+   ```
+   *(Alternatively: `uvicorn main:app --reload`)*
+
+2. **Access the API Documentation:**
+   Open your browser and navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). This provides an interactive Swagger UI to test the endpoints.
+
+---
+
+## 5. The Scraping Strategy (Core Logic)
+
+BookMyShow uses internal APIs heavily. The most efficient way to get accurate data is through **direct HTTP requests** mimicking the browser's network patterns.
+
+### Workflow:
+1. **Initialize Job:** FastAPI creates a background task and immediately returns a Job ID.
+2. **Fetch Regions (Cities):** The scraper hits the regions API to discover available cities.
+3. **Iterate Regions:** The script loops through the cities, hitting the movies API to find the target movie.
+4. **Fetch Showtimes:** For matched movies, the script hits the Primary-Static and Primary-Dynamic APIs to pull theater schedules and live seat availability.
+5. **Extract Data:** Parse the JSON responses to extract: Theater Name, Capacity, Booked Seats, and Ticket Price.
+6. **Calculate & Aggregate:** Calculate `Occupancy`, `Occupancy Percentage`, and `Net Collection`.
+7. **Update State:** Save the final aggregated JSON to the in-memory dictionary.
+
+---
+
+## 6. API Specifications
 
 ### Endpoint 1: Submit Analysis Job
 Triggers the background scraping process.
@@ -102,27 +144,21 @@ Used to poll for the completed data.
       "data": {
         "movie": "Peddi",
         "lastUpdated": "2026-06-23T12:00:00Z",
-        "states": { ... } // Your requested schema goes here
+        "states": { ... }
       }
     }
     ```
 
 ---
 
-## 5. Development Phases
+## 7. BookMyShow Internal API Reference
 
-> [!TIP]
-> Breaking this down into phases ensures we build a robust system without getting blocked by scraping complexities early on.
-
-*   **Phase 1: API & In-Memory State.** Build the FastAPI endpoints, setup Pydantic models, and configure the in-memory job tracker using `BackgroundTasks`. Mock the scraper to ensure data flows correctly.
-*   **Phase 2: Scraper Development.** Build the Playwright script to successfully navigate BookMyShow and intercept internal XHR requests for a single city.
-*   **Phase 3: Aggregation & Scaling.** Expand the scraper to loop through predefined lists of cities/states, aggregate the data in memory, and update the global job dictionary.
-
-
+> [!CAUTION]
+> The following cURL requests are the exact internal API calls made by the BookMyShow frontend. These headers must be preserved in the Python `requests` calls to avoid being blocked.
 
 ### All Cities(regions) API
 
-```
+```bash
 curl 'https://in.bookmyshow.com/api/explore/v1/discover/regions' \
 -H 'sec-ch-ua-platform: "macOS"' \
 -H 'Referer: https://in.bookmyshow.com/explore/home/hyderabad' \
@@ -133,13 +169,11 @@ curl 'https://in.bookmyshow.com/api/explore/v1/discover/regions' \
 -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36' \
 -H 'Accept: application/json, text/plain, */*'
 ```
-
-Response : jsons/cities.json
-
+*Response: `jsons/cities.json`*
 
 ### Movies By City
 
-```
+```bash
 curl 'https://in.bookmyshow.com/api/explore/v1/discover/movies-vijayawada?region=VIJA&cat=MT&embedded=true&lat=16.519&lon=80.6215' \
 -H 'accept: application/json, text/plain, */*' \
 -H 'accept-language: en-GB,en-US;q=0.9,en;q=0.8' \
@@ -169,39 +203,15 @@ curl 'https://in.bookmyshow.com/api/explore/v1/discover/movies-vijayawada?region
 -H 'x-region-slug: vijayawada' \
 -H 'x-segments;'
 ```
+*Response: `jsons/movies-by-city.json`*
 
-Response :
-jsons/movies-by-city.json
+### Showtimes (Primary Static & Dynamic)
 
+**GET Request URLs**
+- Static: `https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-static?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215`
+- Dynamic: `https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-dynamic?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215`
 
-
-Request URL
-https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-static?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215
-Request Method
-GET
-
-
-
-curl 'https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-dynamic?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215' \
--H 'x-app-code: WEB' \
--H 'sec-ch-ua-platform: "macOS"' \
--H 'x-geohash: tfc' \
--H 'sec-ch-ua: "Google Chrome";v="149", "Chromium";v="149", "Not)A;Brand";v="24"' \
--H 'sec-ch-ua-mobile: ?0' \
--H 'x-lsid;' \
--H 'x-latitude: 16.519' \
--H 'x-region-slug: vijayawada' \
--H 'sentry-trace: 6f6c27227f3a40f2becdf6e473eb5ee1-838e4e211c4b55a3-0' \
--H 'baggage: sentry-environment=production,sentry-release=release_310,sentry-public_key=4d17a59c2597410e714ab31d421148d9,sentry-trace_id=6f6c27227f3a40f2becdf6e473eb5ee1,sentry-transaction=%2Fmovies%2F%3AregionNameSlug%2F%3AmovieNameSlug%2Fbuytickets%2F%3AeventCode%2F%3AshowDate%3F,sentry-sampled=false,sentry-sample_rand=0.5502271786866201,sentry-sample_rate=0.001' \
--H 'Accept: application/json, text/plain, */*' \
--H 'x-longitude: 80.6215' \
--H 'Referer: https://in.bookmyshow.com/movies/vijayawada/peddi/buytickets/ET00439772/' \
--H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36' \
--H 'x-location-selection: manual' \
-
-
-
-
+```bash
 curl 'https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-static?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215' \
 -H 'x-app-code: WEB' \
 -H 'sec-ch-ua-platform: "macOS"' \
@@ -219,63 +229,12 @@ curl 'https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-st
 -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36' \
 -H 'x-location-selection: manual' \
 -H 'x-region-code: VIJA'
+```
 
+---
 
-curl 'https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-dynamic?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215' \
--H 'accept: application/json, text/plain, */*' \
--H 'accept-language: en-GB,en-US;q=0.9,en;q=0.8' \
--H 'baggage: sentry-environment=production,sentry-release=release_310,sentry-public_key=4d17a59c2597410e714ab31d421148d9,sentry-trace_id=6f6c27227f3a40f2becdf6e473eb5ee1,sentry-transaction=%2Fmovies%2F%3AregionNameSlug%2F%3AmovieNameSlug%2Fbuytickets%2F%3AeventCode%2F%3AshowDate%3F,sentry-sampled=false,sentry-sample_rand=0.5502271786866201,sentry-sample_rate=0.001' \
--b '_ga=GA1.1.1564755255.1766573496; le=smlcodes%40gmail.com; lm=; bmsId="1.61267030.1782201813946"; _cfuvid=67tCTv.fXUumqeEt4EgOYQjgRxk3g_VI3wPoS.kNmM0-1782201813.8910978-1.0.1.1-3s4qzSYIv7i4E5mZhPlbCS_y9ubRDAC207PSqKQYv54; _gcl_au=1.1.1461127957.1782201815; WZRK_G=4c77ce060bbe4a8e8a447c1f2d2ade81; cf_clearance=2PBkIMOAIXrp9PLjWfVqpc5aDyCohaE9ZfzklR4iNsU-1782201815-1.2.1.1-qrURCDNLMdctOLP6iMnWOI3GJNEl8rnOqxfA5XFUeS9TnHikN8RPVJqEbQ4vMYRrK05LgwOXGzaKB9Hr3TNlLWZWKg9VupauTjcjQAdP39W31JyJDS4c2Zf_nVqYBStJRxNlqr.EmUuTcVaqfciaG3.pb86sXwKkuMKJjkxd6jN1rJrnhdbPAxsI2ROtxrr0u5iz6zTwpDXm0fXown_EaDuOQtAkXwewfNRk0Srh9C4JiWsvVi1V2l.D.TBqTYy_TU4GgfvVDrpVMhZ9j2JMg6qCH6fXHRcJfyaw7IKk61j1m3g7YqKGVEsFw9m_nFsnl522oecwuJ0gNkE0A9EoNw; __cf_bm=6H7yy058I_KqrQMphsKeNt0PQ.TYWGU__gdj.ISfooE-1782201815.0774925-1.0.1.1-59r7qti.5UV3ojyyoeDLP57VtYXkQhMPISmwKrIIWuN_hnJjZ1kvQ8FNuRX8xNWv7jIrc7gmEPPVMJa2APzRKtFgzeXELQIaTj_HcupMzeMZHssFCh9E5X6MnUhcDH7H; preferences=%7B%22ticketType%22%3A%22M-TICKET%22%7D; AMP_TOKEN=%24NOT_FOUND; tvc_bmscookie=GA1.2.1564755255.1766573496; tvc_bmscookie_gid=GA1.2.368877641.1782201819; platform=%7B%22segments%22%3A%22%22%7D; cto_bundle=jqi5qF8lMkZFc3g0VDVucW00QUolMkZiQzNSSFZOMmZsalpiWm5IcEo5SG5oZkh2dElyUEtYWXVmZ1Uzakg0VFpud01scE9KJTJCM3BrckklMkZtZFM0Y2pzNWxjVldhSElqcmRldFpGSHZzUDY2a1JINjdNZXQ1YVJYVmhoY0tSN1FFNTM1a2hxeDVNS1dNeDNxQ0ZWaVJkUCUyRkYyR3I0UjdBJTNEJTNE; geoHash=%22%22; geolocation=%7B%22x-location-shared%22%3Afalse%2C%22x-location-selection%22%3A%22manual%22%2C%22timestamp%22%3A1782202121676%7D; rgn=%7B%22regionCode%22%3A%22VIJA%22%2C%22regionName%22%3A%22Vijayawada%22%2C%22subCode%22%3A%22%22%2C%22subName%22%3A%22%22%2C%22regionNameSlug%22%3A%22vijayawada%22%2C%22regionCodeSlug%22%3A%22vija%22%2C%22Lat%22%3A%2216.519%22%2C%22Long%22%3A%2280.6215%22%2C%22GeoHash%22%3A%22tfc%22%2C%22Seq%22%3A%2299%22%2C%22subtitle%22%3A%22%22%2C%22countryCode%22%3A%22IN%22%7D; _gat_UA-27207583-8=1; _ga_84T5GTD0PC=GS2.1.s1782201815$o7$g1$t1782202405$j25$l0$h0; WZRK_S_RK4-47R-98KZ=%7B%22p%22%3A8%2C%22s%22%3A1782201815%2C%22t%22%3A1782202396%7D' \
--H 'if-modified-since: Tue, 23 Jun 2026 08:11:45 GMT' \
--H 'priority: u=1, i' \
--H 'referer: https://in.bookmyshow.com/movies/vijayawada/peddi/buytickets/ET00439772/' \
--H 'sec-ch-ua: "Google Chrome";v="149", "Chromium";v="149", "Not)A;Brand";v="24"' \
--H 'sec-ch-ua-mobile: ?0' \
--H 'sec-ch-ua-platform: "macOS"' \
--H 'sec-fetch-dest: empty' \
--H 'sec-fetch-mode: cors' \
--H 'sec-fetch-site: same-origin' \
--H 'sentry-trace: 6f6c27227f3a40f2becdf6e473eb5ee1-838e4e211c4b55a3-0' \
--H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36' \
--H 'x-app-code: WEB' \
--H 'x-geohash: tfc' \
--H 'x-latitude: 16.519' \
--H 'x-location-selection: manual' \
--H 'x-longitude: 80.6215' \
--H 'x-lsid;' \
--H 'x-region-code: VIJA' \
--H 'x-region-slug: vijayawada'
+## 8. Data Output Format
 
-
-# BookMyShow Movie Showtime Scraper - Description
-
-## Overview
-A Python-based solution to extract movie showtime details, seat occupancy, and revenue data from BookMyShow across all cities in India.
-
-## Core Functionality
-
-### 1. **City Discovery**
-- Fetches all available cities from BookMyShow's regions API
-- Stores city information (name, code, coordinates) in a list/map
-
-### 2. **Movie Search by City**
-- Iterates through each city
-- Replaces static city parameter in the API URL with actual city data
-- Searches for the target movie across all cities
-
-### 3. **Showtime Extraction**
-- For matched movies, extracts showtime details for the current date
-- Calls two backend APIs to gather comprehensive show data:
-    - **Primary-Dynamic API**: Real-time seat availability and pricing
-    - **Primary-Static API**: Static show schedule information
-
-### 4. **Data Processing**
-For each show, calculates:
-- **Total seats** available
-- **Occupied seats** count
-- **Revenue** generated (based on seat price × occupied seats)
-
-### 5. **Output Format**
 Generates hierarchical JSON with:
 ```
 Movie
@@ -287,56 +246,17 @@ Movie
                  └── amount (revenue)
 ```
 
-## Technical Implementation
-
-### API Endpoints Used
-1. **Regions**: `https://in.bookmyshow.com/api/explore/v1/discover/regions`
-2. **Movies by City**: `https://in.bookmyshow.com/api/explore/v1/discover/movies-{city}`
-3. **Showtimes**:
-    - Dynamic: `/api/movies-data/v4/showtimes-by-event/primary-dynamic`
-    - Static: `/api/movies-data/v4/showtimes-by-event/primary-static`
-
-### Request Parameters
-- **City**: Dynamic city code (e.g., VIJA for Vijayawada)
-- **Coordinates**: Latitude/Longitude for accurate location data
-- **Date**: Current date or user-specified date
-- **Event Code**: Unique movie identifier
-
-### Required Headers
-- User-Agent: Browser emulation
-- Accept: JSON response
-- Referer: BookMyShow website
-- x-requested-with: XMLHttpRequest
-
-## Data Flow
-
-1. **Step 1**: Fetch all cities from regions API
-2. **Step 2**: For each city, query movies endpoint with city parameters
-3. **Step 3**: Filter movies to find target title
-4. **Step 4**: Get showtimes using event code and city details
-5. **Step 5**: Parse showtime data to calculate occupancy and revenue
-6. **Step 6**: Structure data in hierarchical JSON format
-
-## Features
-
-- **Dynamic City Processing**: Automatically handles all cities without hardcoding
-- **Error Handling**: Gracefully handles API failures with fallback mechanisms
-- **Revenue Calculation**: Computes total revenue from seat pricing tiers
-- **Flexible Date Support**: Can work with current or specified dates
-
-## Output Example
+**Output Example:**
 ```json
 {
-  "movie": {
-    "title": "Movie Name",
-    "city": {
-      "City Name": {
-        "Theater Name": {
-          "Show: 10:00 AM": {
-            "totalSeats": 600,
-            "occupied": 200,
-            "amount": 30000
-          }
+  "movie": "Movie Name",
+  "city": {
+    "City Name": {
+      "Theater Name": {
+        "Show: 10:00 AM": {
+          "totalSeats": 600,
+          "occupied": 200,
+          "amount": 30000
         }
       }
     }
@@ -345,15 +265,7 @@ Movie
 ```
 
 ## Use Cases
-
 - **Theater Analytics**: Track occupancy patterns
 - **Revenue Analysis**: Calculate daily revenue projections
 - **Market Research**: Compare movie popularity across cities
 - **Ticketing Insights**: Monitor real-time seat availability
-
-## Technical Notes
-
-- Uses Python with `requests` library for API calls
-- Implements browser-like headers to avoid blocking
-- Handles both dynamic and static API fallback
-- Parses seat pricing tiers for accurate revenue calculation
