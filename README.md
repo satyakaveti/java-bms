@@ -245,3 +245,115 @@ curl 'https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-dy
 -H 'x-lsid;' \
 -H 'x-region-code: VIJA' \
 -H 'x-region-slug: vijayawada'
+
+
+# BookMyShow Movie Showtime Scraper - Description
+
+## Overview
+A Python-based solution to extract movie showtime details, seat occupancy, and revenue data from BookMyShow across all cities in India.
+
+## Core Functionality
+
+### 1. **City Discovery**
+- Fetches all available cities from BookMyShow's regions API
+- Stores city information (name, code, coordinates) in a list/map
+
+### 2. **Movie Search by City**
+- Iterates through each city
+- Replaces static city parameter in the API URL with actual city data
+- Searches for the target movie across all cities
+
+### 3. **Showtime Extraction**
+- For matched movies, extracts showtime details for the current date
+- Calls two backend APIs to gather comprehensive show data:
+    - **Primary-Dynamic API**: Real-time seat availability and pricing
+    - **Primary-Static API**: Static show schedule information
+
+### 4. **Data Processing**
+For each show, calculates:
+- **Total seats** available
+- **Occupied seats** count
+- **Revenue** generated (based on seat price × occupied seats)
+
+### 5. **Output Format**
+Generates hierarchical JSON with:
+```
+Movie
+  └── City
+       └── Theater
+            └── Show Time
+                 ├── totalSeats
+                 ├── occupied
+                 └── amount (revenue)
+```
+
+## Technical Implementation
+
+### API Endpoints Used
+1. **Regions**: `https://in.bookmyshow.com/api/explore/v1/discover/regions`
+2. **Movies by City**: `https://in.bookmyshow.com/api/explore/v1/discover/movies-{city}`
+3. **Showtimes**:
+    - Dynamic: `/api/movies-data/v4/showtimes-by-event/primary-dynamic`
+    - Static: `/api/movies-data/v4/showtimes-by-event/primary-static`
+
+### Request Parameters
+- **City**: Dynamic city code (e.g., VIJA for Vijayawada)
+- **Coordinates**: Latitude/Longitude for accurate location data
+- **Date**: Current date or user-specified date
+- **Event Code**: Unique movie identifier
+
+### Required Headers
+- User-Agent: Browser emulation
+- Accept: JSON response
+- Referer: BookMyShow website
+- x-requested-with: XMLHttpRequest
+
+## Data Flow
+
+1. **Step 1**: Fetch all cities from regions API
+2. **Step 2**: For each city, query movies endpoint with city parameters
+3. **Step 3**: Filter movies to find target title
+4. **Step 4**: Get showtimes using event code and city details
+5. **Step 5**: Parse showtime data to calculate occupancy and revenue
+6. **Step 6**: Structure data in hierarchical JSON format
+
+## Features
+
+- **Dynamic City Processing**: Automatically handles all cities without hardcoding
+- **Error Handling**: Gracefully handles API failures with fallback mechanisms
+- **Revenue Calculation**: Computes total revenue from seat pricing tiers
+- **Flexible Date Support**: Can work with current or specified dates
+
+## Output Example
+```json
+{
+  "movie": {
+    "title": "Movie Name",
+    "city": {
+      "City Name": {
+        "Theater Name": {
+          "Show: 10:00 AM": {
+            "totalSeats": 600,
+            "occupied": 200,
+            "amount": 30000
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Use Cases
+
+- **Theater Analytics**: Track occupancy patterns
+- **Revenue Analysis**: Calculate daily revenue projections
+- **Market Research**: Compare movie popularity across cities
+- **Ticketing Insights**: Monitor real-time seat availability
+
+## Technical Notes
+
+- Uses Python with `requests` library for API calls
+- Implements browser-like headers to avoid blocking
+- Handles both dynamic and static API fallback
+- Parses seat pricing tiers for accurate revenue calculation
