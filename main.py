@@ -41,6 +41,28 @@ async def analyze_movie(request: AnalysisRequest, background_tasks: BackgroundTa
         "message": "Scraping job initiated. Check status using the jobId."
     }
 
+@app.post("/api/v1/analyze/{region_name}", response_model=AnalysisResponse, status_code=202)
+async def analyze_movie_by_region(region_name: str, request: AnalysisRequest, background_tasks: BackgroundTasks):
+    movie_name = request.movieName.strip()
+    if not movie_name:
+        raise HTTPException(status_code=400, detail="movieName is required")
+
+    job_id = str(uuid.uuid4())
+    jobs_db[job_id] = {
+        "status": "PROCESSING",
+        "data": None,
+        "error": None
+    }
+    
+    # Run the scraping logic in the background, targeting only the specified state/region
+    background_tasks.add_task(run_scraping_job, job_id, movie_name, jobs_db, region_name)
+    
+    return {
+        "jobId": job_id,
+        "status": "PROCESSING",
+        "message": f"Scraping job initiated for region {region_name}. Check status using the jobId."
+    }
+
 @app.get("/api/v1/analyze/{jobId}")
 async def get_analysis_status(jobId: str):
     job = jobs_db.get(jobId)

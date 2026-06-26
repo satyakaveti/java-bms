@@ -2,6 +2,8 @@ from curl_cffi import requests
 import datetime
 import traceback
 import urllib.parse
+import time
+import random
 
 HEADERS_BASE = {
     'sec-ch-ua-platform': '"macOS"',
@@ -13,10 +15,29 @@ HEADERS_BASE = {
     'x-platform-code': 'DESKTOP-WEB'
 }
 
+WEBSHARE_PROXIES = [
+    "31.59.20.176:6754:umfreken:t1kcbpmt3lup",
+    "31.56.127.193:7684:umfreken:t1kcbpmt3lup",
+    "45.38.107.97:6014:umfreken:t1kcbpmt3lup",
+    "38.154.203.95:5863:umfreken:t1kcbpmt3lup",
+    "198.105.121.200:6462:umfreken:t1kcbpmt3lup",
+    "64.137.96.74:6641:umfreken:t1kcbpmt3lup",
+    "198.23.243.226:6361:umfreken:t1kcbpmt3lup",
+    "38.154.185.97:6370:umfreken:t1kcbpmt3lup",
+    "142.111.67.146:5611:umfreken:t1kcbpmt3lup",
+    "191.96.254.138:6185:umfreken:t1kcbpmt3lup"
+]
+
+def get_random_proxy():
+    proxy_raw = random.choice(WEBSHARE_PROXIES)
+    ip, port, user, pwd = proxy_raw.split(":")
+    proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+    return {"http": proxy_url, "https": proxy_url}
+
 def fetch_regions():
     url = "https://in.bookmyshow.com/api/explore/v1/discover/regions"
     regions = []
-    res = requests.get(url, headers=HEADERS_BASE, timeout=10, impersonate="chrome110")
+    res = requests.get(url, headers=HEADERS_BASE, timeout=10, impersonate="chrome110", proxies=get_random_proxy())
     res.raise_for_status()
     data = res.json()
     bms_data = data.get("BookMyShow", {})
@@ -44,7 +65,7 @@ def fetch_movies_by_city(region_slug, region_code, lat, lon):
         'x-bms-id': '1.61267030.1782201813946',
         'referer': f'https://in.bookmyshow.com/explore/movies-{region_slug}?cat=MT'
     })
-    res = requests.get(url, headers=headers, timeout=10, impersonate="chrome110")
+    res = requests.get(url, headers=headers, timeout=10, impersonate="chrome110", proxies=get_random_proxy())
     res.raise_for_status()
     data = res.json()
     
@@ -74,43 +95,58 @@ def fetch_showtimes(event_code, region_code, lat, lon):
         'referer': f'https://in.bookmyshow.com/explore/movies-{region_code.lower()}?cat=MT'
     })
     
-    static_res = requests.get(static_url, headers=headers, timeout=10, impersonate="chrome110")
+    proxy = get_random_proxy()
+    static_res = requests.get(static_url, headers=headers, timeout=10, impersonate="chrome110", proxies=proxy)
     static_res.raise_for_status()
     static_data = static_res.json()
     
-    dynamic_res = requests.get(dynamic_url, headers=headers, timeout=10, impersonate="chrome110")
+    dynamic_res = requests.get(dynamic_url, headers=headers, timeout=10, impersonate="chrome110", proxies=proxy)
     dynamic_res.raise_for_status()
     dynamic_data = dynamic_res.json()
     
     theaters = []
     # Parsing based on anticipated BookMyShow API schema. 
     # If the schema varies, this will raise a KeyError/TypeError which we can trace and fix.
+    static_venues = static_data.get("data", {}).get("venues", {})
     
-    venues = static_data["venues"]
-    for venue in venues:
-        venue_code = venue["venueCode"]
-        theater_name = venue["venueName"]
+    widgets = dynamic_data.get("data", {}).get("showtimeWidgets", [])
+    dynamic_venues = []
+    for w in widgets:
+        if w.get("type") == "groupList":
+            items = w.get("data", [])
+            if items and "data" in items[0]:
+                dynamic_venues = items[0]["data"]
+                break
+
+    for dyn_venue in dynamic_venues:
+        venue_code = dyn_venue.get("id")
+        theater_name = static_venues.get(venue_code, {}).get("venueName", "Unknown Theater")
         
         capacity = 0
         occupancy = 0
         net_collection = 0
         
-        # Match with dynamic data
-        dyn_venue = next((v for v in dynamic_data["venues"] if v["venueCode"] == venue_code), None)
-        
-        if dyn_venue and "shows" in dyn_venue:
-            for show in dyn_venue["shows"]:
-                if "categories" in show:
-                    for cat in show["categories"]:
-                        price = float(cat["price"])
-                        total_seats = int(cat["maxSeats"])
-                        avail_seats = int(cat["seatsAvailable"])
+        if "showtimes" in dyn_venue:
+            for show in dyn_venue["showtimes"]:
+                categories = show.get("additionalData", {}).get("categories", [])
+                for cat in categories:
+                    price = float(cat.get("curPrice", 0))
+                    avail_status = str(cat.get("availStatus", "0"))
+                    
+                    # Approximation algorithm since BMS v4 API removed explicit seat counts
+                    total_seats = 100 
+                    if avail_status == "0": # Sold out
+                        booked = 100
+                    elif avail_status == "1": # Almost full
+                        booked = 90
+                    elif avail_status == "3": # Available
+                        booked = 30
+                    else:
+                        booked = 0
                         
-                        booked = total_seats - avail_seats
-                        
-                        capacity += total_seats
-                        occupancy += booked
-                        net_collection += (booked * price)
+                    capacity += total_seats
+                    occupancy += booked
+                    net_collection += (booked * price)
             
             occ_pct = round((occupancy / capacity * 100), 2) if capacity > 0 else 0.0
             
@@ -125,7 +161,7 @@ def fetch_showtimes(event_code, region_code, lat, lon):
     return theaters
 
 
-def run_scraping_job(job_id: str, target_movie: str, jobs_dict: dict):
+def run_scraping_job(job_id: str, target_movie: str, jobs_dict: dict, target_state: str = None):
     try:
         jobs_dict[job_id]["status"] = "PROCESSING"
         
@@ -138,10 +174,16 @@ def run_scraping_job(job_id: str, target_movie: str, jobs_dict: dict):
         print(f"[{job_id}] Fetching regions...")
         regions = fetch_regions()
         
-        # Limit for testing/debugging. Remove slicing in production.
-        regions = regions[:5] if regions else []
+        # Process all regions or filter by state
+        if target_state:
+            regions = [r for r in regions if r.get("state_name", "").lower() == target_state.lower()]
         
         for region in regions:
+            # Respect BookMyShow rate limits with a randomized 3-8 second human-like gap
+            delay = random.uniform(3.0, 8.0)
+            print(f"[{job_id}] Waiting for {delay:.2f} seconds before next request...")
+            time.sleep(delay)
+            
             state_name = region.get("state_name", "Unknown State")
             city_name = region.get("name")
             print(f"[{job_id}] Processing region: {city_name} in {state_name}")

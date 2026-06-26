@@ -89,6 +89,7 @@ You must have Python 3.11 or higher installed.
    ```
    *(Alternatively: `uvicorn main:app --reload`)*
 
+
 2. **Access the API Documentation:**
    Open your browser and navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). This provides an interactive Swagger UI to test the endpoints.
 
@@ -156,7 +157,20 @@ Used to poll for the completed data.
 
 ---
 
-## 7. BookMyShow Internal API Reference
+## 7. Anti-Bot & Proxy Rotation
+
+To bypass BookMyShow's aggressive Cloudflare protections and IP bans (e.g., `403 Forbidden` and `429 Too Many Requests`), this scraper implements:
+1. **TLS Fingerprint Impersonation:** Uses `curl_cffi` to perfectly mimic the TLS fingerprint of Chrome 110.
+2. **Rotating Proxies (Webshare.io):** The scraper maintains a pool of private datacenter proxies and randomly selects a proxy for each internal API request.
+
+**Registered Proxy Details:**
+- **Provider:** Webshare.io
+- **Registered Account:** `smlcodes@gmail.com`
+- **Configuration:** Proxies are hardcoded directly into `scraper.py` inside the `WEBSHARE_PROXIES` list.
+
+---
+
+## 8. BookMyShow Internal API Reference
 
 > [!CAUTION]
 > The following cURL requests are the exact internal API calls made by the BookMyShow frontend. These headers must be preserved in the Python `requests` calls to avoid being blocked.
