@@ -35,11 +35,14 @@ def fetch_regions():
     return regions
 
 def fetch_movies_by_city(region_slug, region_code, lat, lon):
+    url = f"https://in.bookmyshow.com/api/explore/v1/discover/movies-{region_slug}?region={region_code}&cat=MT&embedded=true&lat={lat}&lon={lon}"
+    movies = []
     headers = HEADERS_BASE.copy()
     headers.update({
         'x-region-code': region_code,
         'x-region-slug': region_slug,
-        'x-bms-id': '1.61267030.1782201813946'
+        'x-bms-id': '1.61267030.1782201813946',
+        'referer': f'https://in.bookmyshow.com/explore/movies-{region_slug}?cat=MT'
     })
     res = requests.get(url, headers=headers, timeout=10, impersonate="chrome110")
     res.raise_for_status()
@@ -67,7 +70,8 @@ def fetch_showtimes(event_code, region_code, lat, lon):
     headers.update({
         'x-region-code': region_code,
         'x-latitude': str(lat),
-        'x-longitude': str(lon)
+        'x-longitude': str(lon),
+        'referer': f'https://in.bookmyshow.com/explore/movies-{region_code.lower()}?cat=MT'
     })
     
     static_res = requests.get(static_url, headers=headers, timeout=10, impersonate="chrome110")
