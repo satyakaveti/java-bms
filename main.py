@@ -251,6 +251,40 @@ def get_theaters_by_city(city_name: str):
 class SyncRequest(BaseModel):
     region: Optional[str] = None
 
+class FullRunRequest(BaseModel):
+    regions: list[str]
+    language: str
+
+@app.post("/api/v1/district/full-run", status_code=202)
+def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
+    if not fetch_regions_district:
+        raise HTTPException(status_code=501, detail="District scraper not implemented yet")
+        
+    def full_run_job():
+        try:
+            print(f"[Full Run] Getting active movies in Hyderabad for language: {req.language}")
+            movies = get_movies_by_region_district("Hyderabad", language=req.language)
+            print(f"[Full Run] Found {len(movies)} movies.")
+            
+            for m in movies:
+                movie_name = m.get("name")
+                if not movie_name: continue
+                
+                print(f"\n[Full Run] Processing movie: {movie_name}")
+                for state in req.regions:
+                    job_id = str(uuid.uuid4())
+                    print(f"[Full Run] Starting scraping job {job_id} for '{movie_name}' in state '{state}'")
+                    # This will scrape and save to movies, shows, show_metrics, show_metric_prices
+                    run_district_scraping_job(job_id, movie_name, target_state=state)
+                    
+            print("[Full Run] Completed successfully.")
+        except Exception as e:
+            print(f"[Full Run] Error: {e}")
+            traceback.print_exc()
+            
+    background_tasks.add_task(full_run_job)
+    return {"message": f"Full run for {req.language} movies in {len(req.regions)} regions initiated in the background."}
+
 @app.post("/api/v1/district/add-update-locations-theaters", status_code=202)
 def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: SyncRequest = None):
     if not fetch_regions_district:
