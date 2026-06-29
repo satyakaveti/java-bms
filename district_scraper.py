@@ -8,6 +8,7 @@ import random
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import db_operations
 
 WEBSHARE_PROXIES = [
     "31.59.20.176:6754:umfreken:t1kcbpmt3lup",
@@ -143,6 +144,45 @@ def fetch_movies_by_city_district(city_id, lat, lon):
                     
     return movies
 
+def fetch_cinemas_direct(city_name):
+    slug = city_name.lower().replace(" ", "-")
+    url = f"https://www.district.in/movies/cinemas-in-{slug}"
+    
+    headers = HEADERS_DISTRICT.copy()
+    try:
+        res = get_with_retry(url, headers=headers)
+        if res.status_code == 404:
+            return []
+            
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(res.text, "html.parser")
+        script = soup.find("script", id="__NEXT_DATA__")
+        
+        theaters = {}
+        if script:
+            data = json.loads(script.string)
+            rails = data.get("props", {}).get("pageProps", {}).get("data", {}).get("serverState", {}).get("EDSResponse", {}).get("rails", [])
+            for rail in rails:
+                for item in rail.get("items", []):
+                    cinema_data = item.get("ItemDetails", {}).get("CinemaData")
+                    if cinema_data:
+                        tid = str(cinema_data.get("cinema_id"))
+                        if tid not in theaters:
+                            theaters[tid] = {
+                                "theater_id": tid,
+                                "theater_name": cinema_data.get("cinema_name"),
+                                "lat": cinema_data.get("lat"),
+                                "lon": cinema_data.get("lon"),
+                                "address": cinema_data.get("address")
+                            }
+        theaters_list = list(theaters.values())
+        # Sort alphabetically
+        theaters_list.sort(key=lambda x: x["theater_name"])
+        return theaters_list
+    except Exception as e:
+        print(f"Error fetching cinemas for {city_name}: {e}")
+        return []
+
 def get_movies_by_region_district(region_name, language=None):
     regions = fetch_regions_district()
     
@@ -220,6 +260,7 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
             
             if cinema_id not in cinema_dict:
                 cinema_dict[cinema_id] = {
+                    "theaterId": cinema_id,
                     "theaterName": cinema_name,
                     "capacity": 0,
                     "occupancy": 0,
@@ -230,7 +271,10 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
             c_entry = cinema_dict[cinema_id]
             
             for session in cinema_sessions:
+                show_id = session.get("sid", "Unknown")
+                screen_name = session.get("audi", "Unknown Screen")
                 show_time_str = session.get("showTime", "Unknown")
+                show_time_raw = show_time_str
                 if show_time_str != "Unknown":
                     try:
                         st = datetime.datetime.strptime(show_time_str, "%Y-%m-%dT%H:%M")
@@ -249,6 +293,12 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
                 areas = session.get("areas", [])
                 
                 show_cats = []
+                capacity_this_show = 0
+                occupancy_this_show = 0
+                net_collection_this_show = 0
+                
+                price_breakdown = {}
+                
                 for area in areas:
                     max_seats = int(area.get("sTotal", 0))
                     avail_seats = int(area.get("sAvail", 0))
@@ -257,6 +307,16 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
                     status = area.get("seatStatus", "Unknown")
                     
                     booked = max_seats - avail_seats
+                    
+                    if price not in price_breakdown:
+                        price_breakdown[price] = {"capacity": 0, "occupancy": 0}
+                    price_breakdown[price]["capacity"] += max_seats
+                    price_breakdown[price]["occupancy"] += booked
+                    
+                    capacity_this_show += max_seats
+                    occupancy_this_show += booked
+                    net_collection_this_show += (booked * price)
+                    
                     c_entry["capacity"] += max_seats
                     c_entry["occupancy"] += booked
                     c_entry["netCollection"] += (booked * price)
@@ -272,8 +332,15 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
                     })
                     
                 c_entry["shows"].append({
+                    "showId": show_id,
+                    "screenName": screen_name,
                     "showTime": show_time_formatted,
-                    "categories": show_cats
+                    "showTimeRaw": show_time_raw,
+                    "capacity": capacity_this_show,
+                    "occupancy": occupancy_this_show,
+                    "netCollection": net_collection_this_show,
+                    "categories": show_cats,
+                    "priceBreakdown": price_breakdown
                 })
                 
     theaters = []
@@ -300,6 +367,14 @@ def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, 
         print(f"[{job_id}] Fetching district.in regions...")
         regions = fetch_regions_district()
         
+        # Pre-populate all regions in DB to ensure FK constraints and joins work
+        for r in regions:
+            c_id = r.get("city_id")
+            c_name = r.get("city_name")
+            s_name = r.get("state_name", "Unknown State")
+            if c_id and c_name:
+                db_operations.upsert_location(int(c_id), c_name, s_name)
+                
         if target_state:
             regions = [r for r in regions if r.get("state_name", "").lower() == target_state.lower()]
             
@@ -331,6 +406,9 @@ def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, 
                         target_entity_id = m.get("movie_id")
                         target_movie_slug = re.sub(r'[^a-z0-9]+', '-', m.get("name", "").lower()).strip('-')
                         print(f"[{job_id}] Resolved movie '{target_movie}' to ID {target_entity_id} (slug: {target_movie_slug}) in {city_name}.")
+                        # Save the location and movie to DB
+                        db_operations.upsert_location(city_id, city_name, region.get("state_name", "Unknown State"))
+                        db_operations.upsert_movie(str(target_entity_id), target_movie, "Unknown")
                         break
             except Exception:
                 pass
@@ -357,6 +435,38 @@ def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, 
                     total_capacity = sum(t.get("capacity", 0) for t in showtimes if isinstance(t.get("capacity"), (int, float)))
                     total_occupancy = sum(t.get("occupancy", 0) for t in showtimes if isinstance(t.get("occupancy"), (int, float)))
                     total_collection = sum(t.get("netCollection", 0) for t in showtimes if isinstance(t.get("netCollection"), (int, float)))
+                    
+                    city_id = region.get("city_id")
+                    for theater in showtimes:
+                        theater_id = theater.get("theaterId")
+                        if not theater_id:
+                            continue
+                            
+                        theater_name = theater.get("theaterName")
+                        db_operations.upsert_theater(str(theater_id), city_id, theater_name)
+                        
+                        for show in theater.get("shows", []):
+                            show_id = str(show.get("showId"))
+                            screen_name = show.get("screenName")
+                            show_time_raw = show.get("showTimeRaw")
+                            
+                            show_date = None
+                            if show_time_raw and show_time_raw != "Unknown":
+                                show_date = show_time_raw.split("T")[0]
+                                
+                            db_operations.upsert_show_and_record_metric(
+                                show_id=show_id,
+                                theater_id=str(theater_id),
+                                movie_id=str(target_entity_id),
+                                screen_name=screen_name,
+                                show_time=show_time_raw,
+                                show_date=show_date,
+                                capacity=show.get("capacity", 0),
+                                occupancy=show.get("occupancy", 0),
+                                net_collection=show.get("netCollection", 0.0),
+                                price_breakdown=show.get("priceBreakdown")
+                            )
+                            
                     print(f"[{job_id}] Finished {city_name} in {elapsed:.2f}s | Theaters: {total_theaters} | Capacity: {total_capacity} | Occupancy: {total_occupancy} | Collection: Rs. {total_collection:.2f}")
                     return (state_name, city_name, showtimes)
                 else:

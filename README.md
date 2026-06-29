@@ -150,7 +150,7 @@ Used to poll for the completed data.
       "data": {
         "movie": "Peddi",
         "lastUpdated": "2026-06-23T12:00:00Z",
-        "states": { ... }
+        "states": {  }
       }
     }
     ```
@@ -306,3 +306,121 @@ Because the newer APIs omit exact seat data, the output format adapts dynamicall
 - **Revenue Analysis**: Calculate daily revenue projections
 - **Market Research**: Compare movie popularity across cities
 - **Ticketing Insights**: Monitor real-time seat availability
+
+
+
+
+# Historical Movie Collection Tracking - Architecture & Design
+
+This document outlines the proposed database schema, data ingestion workflow, and API design to support the historical tracking of movie collections with extensive drill-down capabilities.
+
+## User Review Required
+
+Please review the updated database schema below. Based on your feedback, I've added a new table (`show_metric_prices`) to track occupancy and capacity grouped strictly by **ticket price** (e.g., 150, 250) for every historical snapshot, rather than by category names.
+
+We will continue using standard local `SQLite`, which is perfectly aligned for a seamless migration to Cloudflare D1 later.
+
+---
+
+## 1. Database Schema Design
+
+We will need **5 core tables** to maintain a clean hierarchy and allow efficient querying for both Movie-wise and Theater-wise drill-downs.
+
+### `movies`
+* `movie_id` (PK, String) - The District/BMS entity ID
+* `title` (String)
+* `language` (String)
+
+### `locations`
+* `city_id` (PK, Integer)
+* `city_key` (String)
+* `city_name` (String)
+* `state_name` (String)
+
+### `theaters`
+* `theater_id` (PK, String) - Unique theater identifier
+* `city_id` (FK to `locations`)
+* `theater_name` (String)
+* `lat`
+* `lon"`
+* `address`
+ 
+
+### `shows`
+Stores the static information about a specific screening.
+* `show_id` (PK, String) - Unique session ID from the scraper (e.g., `sid`)
+* `theater_id` (FK to `theaters`)
+* `movie_id` (FK to `movies`)
+* `screen_name` (String) - e.g., "AUDI 1"
+* `show_time` (DateTime) - The exact time of the show
+* `show_date` (Date) - Indexed for fast day-wise querying
+* `is_finalized` (Boolean) - Defaults to `FALSE`
+
+### `show_metrics`
+Stores the 30-minute historical snapshots representing the overall totals for the show.
+* `metric_id` (PK, Auto-increment)
+* `show_id` (FK to `shows`)
+* `timestamp` (DateTime) - When the scraper ran
+* `capacity` (Integer) - Total capacity across all prices
+* `occupancy` (Integer) - Total booked across all prices
+* `net_collection` (Decimal)
+
+### `show_metric_prices` (NEW)
+Stores the breakdown of a specific 30-minute snapshot grouped by ticket price.
+* `id` (PK, Auto-increment)
+* `metric_id` (FK to `show_metrics`)
+* `ticket_price` (Decimal) - The price point (e.g., 150.00, 250.00)
+* `capacity` (Integer) - Total seats available at this price point
+* `occupancy` (Integer) - Total seats booked at this price point
+
+---
+
+## 2. Data Ingestion Workflow (Scheduler Logic)
+
+The background worker running every 30 minutes will perform the following steps:
+
+1. **Upsert Metadata**: Insert/Update `movies`, `locations`, and `theaters` if any new ones are discovered during scraping.
+2. **Upsert Shows**: Insert new `shows` that have been scheduled.
+3. **Record Snapshots**: For every active show scraped:
+    * Insert a new row into `show_metrics` with the overall totals.
+    * Aggregate the seat areas by their `price`.
+    * Insert the price-wise breakdowns into `show_metric_prices`.
+4. **Finalization Logic (The Missing Show Check)**:
+    * The script will query the database for all shows that are `is_finalized = FALSE` and whose `show_time` is in the past (or shows that suddenly disappeared from the scraper's current run).
+    * It will mark those shows as `is_finalized = TRUE` in the `shows` table.
+    * The latest snapshot in `show_metrics` for that show becomes the permanent "Final Collection".
+5. **End of Day Process (11:30 PM)**:
+    * A special flag or scheduled job runs at 11:30 PM.
+    * It forces `is_finalized = TRUE` on all remaining active shows for that `show_date`.
+
+---
+
+## 3. API Design
+
+We will expose read-only APIs to power the UI drill-downs. All aggregation (SUMs) will filter by `is_finalized = TRUE` (for past shows) or use the `MAX(timestamp)` snapshot for currently active shows.
+
+### Movie Wise Views
+* `GET /api/v1/analytics/movies/{movie_id}/summary`
+    * **Query Params**: `?date=YYYY-MM-DD`
+    * **Response**: Total collection grouped by `state_name` -> `city_name`.
+* `GET /api/v1/analytics/movies/{movie_id}/theaters`
+    * **Query Params**: `?city_id=12&date=YYYY-MM-DD`
+    * **Response**: Collections grouped by `theater_id`.
+* `GET /api/v1/analytics/movies/{movie_id}/shows`
+    * **Query Params**: `?theater_id=XYZ&date=YYYY-MM-DD`
+    * **Response**: Show-by-show collections.
+
+### Theater Wise Views
+* `GET /api/v1/analytics/theaters/{theater_id}/summary`
+    * **Query Params**: `?date=YYYY-MM-DD`
+    * **Response**: Total collection grouped by `movie_id` and `screen_name`.
+* `GET /api/v1/analytics/theaters/{theater_id}/shows`
+    * **Query Params**: `?screen_name=AUDI 1&date=YYYY-MM-DD`
+    * **Response**: Show-by-show timeline and collections.
+
+### Price-Wise Analytics
+* `GET /api/v1/analytics/shows/{show_id}/prices`
+    * **Response**: Returns the price-wise breakdown (capacity vs. occupancy at 150, 250, etc.) for the final/latest snapshot of a specific show.
+
+
+
