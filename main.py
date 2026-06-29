@@ -2,7 +2,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import uuid
 import uvicorn
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import asyncio
 import datetime
 import traceback
@@ -252,7 +252,7 @@ class SyncRequest(BaseModel):
     region: Optional[str] = None
 
 class FullRunRequest(BaseModel):
-    regions: list[str]
+    regions: List[str]
     language: str
 
 @app.post("/api/v1/district/full-run", status_code=202)
