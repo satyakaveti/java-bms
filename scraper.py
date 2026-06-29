@@ -91,9 +91,29 @@ def fetch_movies_by_city(region_slug, region_code, lat, lon):
                     title = urllib.parse.unquote(parts[-2].replace("-", " "))
                     movies.append({
                         "title": title,
-                        "eventCode": event_code
+                        "eventCode": event_code,
+                        "language": card.get("analytics", {}).get("language", "Unknown")
                     })
     return movies
+
+def get_movies_by_region(region_name, language=None):
+    regions = fetch_regions()
+    region = next((r for r in regions if r.get("name", "").lower() == region_name.lower() or r.get("state_name", "").lower() == region_name.lower()), None)
+    
+    if not region:
+        return {"error": "Region not found"}
+        
+    region_code = region.get("code")
+    region_slug = region.get("slug", region.get("name", "").lower().replace(" ", "-"))
+    lat = region.get("lat")
+    lon = region.get("lon")
+    
+    movies = fetch_movies_by_city(region_slug, region_code, lat, lon)
+    
+    if language:
+        movies = [m for m in movies if m.get("language", "").lower() == language.lower()]
+        
+    return {"region": region.get("name"), "movies": movies}
 
 def fetch_showtimes(event_code, region_code, lat, lon):
     static_url = f"https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-static?eventCode={event_code}&dateCode=&isDesktop=true&regionCode={region_code}&xLocationShared=false&memberId=&lsId=&subCode=&lat={lat}&lon={lon}"
@@ -142,7 +162,7 @@ def fetch_showtimes(event_code, region_code, lat, lon):
         show_list = []
         if "showtimes" in dyn_venue:
             for show in dyn_venue["showtimes"]:
-                show_time = show.get("showTime", "Unknown")
+                show_time = show.get("title") or show.get("showTime") or "Unknown"
                 categories = show.get("categories", [])
                 if not categories:
                     categories = show.get("additionalData", {}).get("categories", [])
@@ -207,7 +227,7 @@ def fetch_showtimes(event_code, region_code, lat, lon):
     return theaters
 
 
-def run_scraping_job(job_id: str, target_movie: str, jobs_dict: dict, target_state: str = None):
+def run_scraping_job(job_id: str, target_movie: str, jobs_dict: dict, target_state: str = None, target_city: str = None):
     try:
         jobs_dict[job_id]["status"] = "PROCESSING"
         
@@ -223,6 +243,9 @@ def run_scraping_job(job_id: str, target_movie: str, jobs_dict: dict, target_sta
         # Process all regions or filter by state
         if target_state:
             regions = [r for r in regions if r.get("state_name", "").lower() == target_state.lower()]
+            
+        if target_city:
+            regions = [r for r in regions if r.get("name", "").lower() == target_city.lower()]
         
         target_event_code = None
         for region in regions:

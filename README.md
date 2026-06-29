@@ -227,8 +227,24 @@ curl 'https://in.bookmyshow.com/api/explore/v1/discover/movies-vijayawada?region
 ### Showtimes (Primary Static & Dynamic)
 
 **GET Request URLs**
-- Static: `https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-static?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215`
-- Dynamic: `https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-dynamic?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215`
+- Static: `https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-static?...`
+- Dynamic: `https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-dynamic?...`
+
+**Data Exposed by V4 `primary-dynamic` API:**
+Upon analyzing the latest `primary-dynamic` API response, here is the data structure and what is actually available:
+- **Theaters/Venues (`venueGroup` > `venue-card`)**: 
+  - `venueCode` (e.g., `AMBH`), `venueName` (e.g., `AMB Cinemas: Gachibowli`)
+  - Features (e.g., `isFnBAvailable`, `isMTicketAvailable`)
+- **Showtimes (`showtimes`)**:
+  - `sessionId`, `showTime` (e.g., `12:30 PM`), `showDateTime`
+  - Format Attributes (e.g., `BARCO FLAGSHIP LASER DOLBY ATMOS`)
+- **Categories & Pricing (`categories`)**:
+  - `priceDesc` / Category Name (e.g., `PLATINUM`, `GOLD`)
+  - `curPrice` / Current Ticket Price (e.g., `350.00`)
+  - `availStatus` / Availability (e.g., `0` = Sold Out, `3` = Available, `1` = Fast Filling)
+
+> [!WARNING]
+> **Data Limitation:** The V4 Dynamic API does **not** expose exact seat counts (`maxSeats` and `availSeats`). It only provides an availability status flag. Because of this, calculating exact real-time occupancy and net collection revenue requires falling back to `"Unknown"` unless individual seat-layout APIs are scraped per show.
 
 ```bash
 curl 'https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-static?eventCode=ET00439772&dateCode=&isDesktop=true&regionCode=VIJA&xLocationShared=false&memberId=&lsId=&subCode=&lat=16.519&lon=80.6215' \
@@ -252,31 +268,33 @@ curl 'https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-st
 
 ---
 
-## 8. Data Output Format
+## 9. Data Output Format
 
-Generates hierarchical JSON with:
-```
-Movie
-  └── City
-       └── Theater
-            └── Show Time
-                 ├── totalSeats
-                 ├── occupied
-                 └── amount (revenue)
-```
+Because the newer APIs omit exact seat data, the output format adapts dynamically. When seat counts are missing, aggregate metrics (capacity, occupancy, collection) will report as `"Unknown"`.
 
-**Output Example:**
 ```json
 {
   "movie": "Movie Name",
   "city": {
     "City Name": {
       "Theater Name": {
-        "Show: 10:00 AM": {
-          "totalSeats": 600,
-          "occupied": 200,
-          "amount": 30000
-        }
+        "capacity": "Unknown",
+        "occupancy": "Unknown",
+        "occupancyPercentage": "Unknown",
+        "netCollection": "Unknown",
+        "shows": [
+          {
+            "showTime": "10:00 AM",
+            "categories": [
+              {
+                "category": "PLATINUM",
+                "price": 350.0,
+                "status": "0",
+                "note": "Exact seats not provided by API"
+              }
+            ]
+          }
+        ]
       }
     }
   }

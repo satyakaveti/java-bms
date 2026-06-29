@@ -119,11 +119,11 @@ def fetch_movies_by_city_district(city_id, lat, lon):
     
     payload = {
         "location": {
-            "city_id": city_id,
-            "user_lng": lon,
-            "user_lat": lat,
-            "gps_lng": lon,
-            "gps_lat": lat
+            "city_id": int(city_id) if city_id else 0,
+            "user_lng": float(lon) if lon else None,
+            "user_lat": float(lat) if lat else None,
+            "gps_lng": float(lon) if lon else None,
+            "gps_lat": float(lat) if lat else None
         },
         "layout_type": "movies_home_v2",
         "request_type": "tab_switch"
@@ -143,6 +143,51 @@ def fetch_movies_by_city_district(city_id, lat, lon):
                     
     return movies
 
+def get_movies_by_region_district(region_name, language=None):
+    regions = fetch_regions_district()
+    
+    matching_regions = []
+    for r in regions:
+        if r.get("city_lat") is not None and r.get("city_long") is not None:
+            if r.get("city_name", "").lower() == region_name.lower():
+                matching_regions.insert(0, r)
+            elif r.get("state_name", "").lower() == region_name.lower():
+                matching_regions.append(r)
+                
+    if not matching_regions:
+        return {"error": "Region not found or no GPS data available"}
+        
+    if matching_regions[0].get("city_name", "").lower() != region_name.lower():
+        matching_regions.sort(key=lambda x: (not x.get("is_popular_city", False), x.get("city_name")))
+        
+    region = matching_regions[0]
+        
+    city_id = region.get("city_id")
+    lat = region.get("city_lat")
+    lon = region.get("city_long")
+    
+    movies_data = fetch_movies_by_city_district(city_id, lat, lon)
+    
+    unique_movies = {}
+    for m in movies_data:
+        m_id = m.get("movie_id")
+        if m_id not in unique_movies:
+            langs = m.get("languages", [])
+            m_lang = langs[0] if langs else "Unknown"
+            
+            unique_movies[m_id] = {
+                "title": m.get("name"),
+                "eventCode": m_id,
+                "language": m_lang
+            }
+            
+    movies = list(unique_movies.values())
+        
+    if language:
+        movies = [m for m in movies if m.get("language", "").lower() == language.lower()]
+        
+    return {"region": region.get("city_name"), "movies": movies}
+
 def fetch_showtimes_district(entity_id, movie_slug, city_key):
     url = f"https://www.district.in/movies/{movie_slug}-movie-tickets-in-{city_key}-MV{entity_id}"
     try:
@@ -159,25 +204,48 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
     data = json.loads(script.string)
     sessions = data.get("props", {}).get("pageProps", {}).get("initialState", {}).get("movies", {}).get("movieSessions", {})
     
-    theaters = []
+    cinema_dict = {}
+    now = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
     
-    for _, val in sessions.items():
+    for format_id, val in sessions.items():
         arranged = val.get("arrangedSessions", [])
         if not arranged:
             continue
             
         for group in arranged:
             group_data = group.get("data", {})
+            cinema_id = group_data.get("entityCode") or group_data.get("name")
             cinema_name = group_data.get("name", "Unknown Theater")
             cinema_sessions = group.get("sessions", [])
             
-            capacity = 0
-            occupancy = 0
-            net_collection = 0
-            show_list = []
+            if cinema_id not in cinema_dict:
+                cinema_dict[cinema_id] = {
+                    "theaterName": cinema_name,
+                    "capacity": 0,
+                    "occupancy": 0,
+                    "netCollection": 0,
+                    "shows": []
+                }
+            
+            c_entry = cinema_dict[cinema_id]
             
             for session in cinema_sessions:
-                show_time = session.get("showTime", "Unknown")
+                show_time_str = session.get("showTime", "Unknown")
+                if show_time_str != "Unknown":
+                    try:
+                        st = datetime.datetime.strptime(show_time_str, "%Y-%m-%dT%H:%M")
+                        # Convert UTC to IST
+                        st = st + datetime.timedelta(hours=5, minutes=30)
+                        
+                        # Filter out past shows for today
+                        if st < now:
+                            continue
+                        show_time_formatted = st.strftime("%I:%M %p").lstrip("0")
+                    except Exception:
+                        show_time_formatted = show_time_str
+                else:
+                    show_time_formatted = show_time_str
+                    
                 areas = session.get("areas", [])
                 
                 show_cats = []
@@ -189,9 +257,9 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
                     status = area.get("seatStatus", "Unknown")
                     
                     booked = max_seats - avail_seats
-                    capacity += max_seats
-                    occupancy += booked
-                    net_collection += (booked * price)
+                    c_entry["capacity"] += max_seats
+                    c_entry["occupancy"] += booked
+                    c_entry["netCollection"] += (booked * price)
                     
                     show_cats.append({
                         "category": cat_name,
@@ -203,25 +271,26 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
                         "collection": booked * price
                     })
                     
-                show_list.append({
-                    "showTime": show_time,
+                c_entry["shows"].append({
+                    "showTime": show_time_formatted,
                     "categories": show_cats
                 })
                 
-            occ_pct = round((occupancy / capacity * 100), 2) if capacity > 0 else 0.0
+    theaters = []
+    for k, v in cinema_dict.items():
+        if not v["shows"]:
+            continue
             
-            theaters.append({
-                "theaterName": cinema_name,
-                "capacity": capacity,
-                "occupancy": occupancy,
-                "occupancyPercentage": occ_pct,
-                "netCollection": net_collection,
-                "shows": show_list
-            })
-            
+        capacity = v["capacity"]
+        occupancy = v["occupancy"]
+        occ_pct = round((occupancy / capacity * 100), 2) if capacity > 0 else 0.0
+        
+        v["occupancyPercentage"] = occ_pct
+        theaters.append(v)
+        
     return theaters
 
-def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None):
+def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, target_city=None):
     try:
         final_data = {
             "movie": target_movie,
@@ -234,6 +303,9 @@ def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None):
         if target_state:
             regions = [r for r in regions if r.get("state_name", "").lower() == target_state.lower()]
             
+        if target_city:
+            regions = [r for r in regions if r.get("city_name", "").lower() == target_city.lower()]
+            
         target_entity_id = None
         target_movie_slug = "movie"
         
@@ -244,10 +316,16 @@ def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None):
         print(f"[{job_id}] Attempting to resolve movie ID...")
         for region in regions:
             if target_entity_id: break
+            
+            city_lat = region.get("city_lat")
+            city_long = region.get("city_long")
+            if city_lat is None or city_long is None:
+                continue
+                
             city_id = region.get("city_id")
             city_name = region.get("city_name")
             try:
-                movies = fetch_movies_by_city_district(int(city_id), region.get("city_lat", 0), region.get("city_long", 0))
+                movies = fetch_movies_by_city_district(int(city_id), city_lat, city_long)
                 for m in movies:
                     if target_movie.lower().replace(" ", "") in m.get("name", "").lower().replace(" ", ""):
                         target_entity_id = m.get("movie_id")
