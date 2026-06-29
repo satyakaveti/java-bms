@@ -540,9 +540,11 @@ def get_theater_summary(theater_id: str, date: str = None):
     conn = get_connection()
     cursor = conn.cursor()
     query = '''
-        SELECT mov.title as movie_name, s.screen_name, sum(m.net_collection) as total_collection
+        SELECT t.name as theater_name, mov.title as movie_name, s.show_id, s.screen_name, s.show_time, s.show_date, s.is_finalized,
+               m.capacity, m.occupancy, m.net_collection as total_collection, m.timestamp as last_updated, m.metric_id
         FROM shows s
         JOIN movies mov ON s.movie_id = mov.movie_id
+        JOIN theaters t ON s.theater_id = t.theater_id
         JOIN (
             SELECT show_id, MAX(metric_id) as latest_metric_id
             FROM show_metrics
@@ -555,13 +557,56 @@ def get_theater_summary(theater_id: str, date: str = None):
     if date:
         query += ' AND s.show_date = ?'
         params.append(date)
-    query += ' GROUP BY s.movie_id, s.screen_name'
+    query += ' ORDER BY s.show_time ASC'
     
     cursor.execute(query, params)
     rows = cursor.fetchall()
+    
+    # Fetch price breakdown for all these metrics
+    metric_ids = [r['metric_id'] for r in rows if r['metric_id']]
+    prices_map = {}
+    if metric_ids:
+        placeholders = ','.join('?' for _ in metric_ids)
+        cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", metric_ids)
+        for p_row in cursor.fetchall():
+            mid = p_row['metric_id']
+            if mid not in prices_map:
+                prices_map[mid] = []
+            prices_map[mid].append({
+                "price": float(p_row['ticket_price']) if p_row['ticket_price'] else 0.0,
+                "capacity": p_row['capacity'],
+                "occupancy": p_row['occupancy']
+            })
+            
     conn.close()
     
-    return [dict(row) for row in rows]
+    shows = []
+    theater_name = ""
+    for row in rows:
+        d = dict(row)
+        theater_name = d.pop('theater_name', "")
+        
+        show_time_str = d.get('show_time')
+        if show_time_str and show_time_str != "Unknown":
+            try:
+                # District provides show_time in UTC
+                st = datetime.datetime.strptime(show_time_str, "%Y-%m-%dT%H:%M")
+                st_ist = st + datetime.timedelta(hours=5, minutes=30)
+                d['show_time_ist'] = st_ist.strftime("%I:%M %p")
+            except Exception:
+                d['show_time_ist'] = show_time_str
+        else:
+            d['show_time_ist'] = show_time_str
+            
+        metric_id = d.pop('metric_id', None)
+        d['price_capacity_breakdown'] = prices_map.get(metric_id, [])
+            
+        shows.append(d)
+        
+    return {
+        "theater_name": theater_name,
+        "shows": shows
+    }
 
 @app.get("/api/v1/analytics/theaters/{theater_id}/shows")
 def get_theater_shows(theater_id: str, screen_name: str, date: str = None):
