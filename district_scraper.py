@@ -254,7 +254,7 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
             
         for group in arranged:
             group_data = group.get("data", {})
-            cinema_id = group_data.get("entityCode") or group_data.get("name")
+            cinema_id = group_data.get("id") or group_data.get("name")
             cinema_name = group_data.get("name", "Unknown Theater")
             cinema_sessions = group.get("sessions", [])
             

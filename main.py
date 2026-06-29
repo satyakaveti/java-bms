@@ -254,6 +254,7 @@ class SyncRequest(BaseModel):
 class FullRunRequest(BaseModel):
     regions: List[str]
     language: str
+    movieName: Optional[str] = None
 
 @app.post("/api/v1/district/full-run", status_code=202)
 def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
@@ -263,19 +264,25 @@ def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
     def full_run_job():
         try:
             print(f"[Full Run] Getting active movies in Hyderabad for language: {req.language}")
-            movies = get_movies_by_region_district("Hyderabad", language=req.language)
+            movies_resp = get_movies_by_region_district("Hyderabad", language=req.language)
+            movies = movies_resp.get("movies", []) if isinstance(movies_resp, dict) else []
             print(f"[Full Run] Found {len(movies)} movies.")
             
             for m in movies:
-                movie_name = m.get("name")
+                movie_name = m.get("title")
                 if not movie_name: continue
+                
+                # If a specific movieName is requested, skip all others
+                if req.movieName and req.movieName.lower().replace(" ", "") not in movie_name.lower().replace(" ", ""):
+                    continue
                 
                 print(f"\n[Full Run] Processing movie: {movie_name}")
                 for state in req.regions:
                     job_id = str(uuid.uuid4())
                     print(f"[Full Run] Starting scraping job {job_id} for '{movie_name}' in state '{state}'")
                     # This will scrape and save to movies, shows, show_metrics, show_metric_prices
-                    run_district_scraping_job(job_id, movie_name, target_state=state)
+                    jobs_db[job_id] = {"status": "PROCESSING", "data": None, "error": None}
+                    run_district_scraping_job(job_id, movie_name, jobs_db, target_state=state)
                     
             print("[Full Run] Completed successfully.")
         except Exception as e:
@@ -338,7 +345,13 @@ def get_movie_summary(movie_id: str, date: str = None):
     conn = get_connection()
     cursor = conn.cursor()
     query = '''
-        SELECT l.state_name, l.city_name, sum(m.net_collection) as total_collection
+        SELECT l.state_name, l.city_name, 
+               count(s.show_id) as no_of_shows,
+               sum(m.net_collection) as sum_total_collection,
+               ROUND(sum(m.net_collection) / 10000000.0, 3) || ' CR' as sum_total_collection_in_cr,
+               sum(m.capacity) as sum_total_seats,
+               sum(m.occupancy) as sum_total_occupied,
+               ROUND(sum(CAST(m.occupancy AS FLOAT)) * 100.0 / NULLIF(sum(m.capacity), 0), 2) as occpency_avg_percentile
         FROM shows s
         JOIN theaters t ON s.theater_id = t.theater_id
         JOIN locations l ON t.city_id = l.city_id
@@ -360,7 +373,167 @@ def get_movie_summary(movie_id: str, date: str = None):
     rows = cursor.fetchall()
     conn.close()
     
-    return [dict(row) for row in rows]
+    state_summary = {}
+    for row in rows:
+        state = row['state_name']
+        if state not in state_summary:
+            state_summary[state] = {
+                "cities": [],
+                "no_of_shows": 0,
+                "sum_total_collection": 0,
+                "sum_total_seats": 0,
+                "sum_total_occupied": 0
+            }
+            
+        # Add to cities list
+        state_summary[state]["cities"].append({
+            "city_name": row['city_name'],
+            "no_of_shows": row['no_of_shows'],
+            "collection": row['sum_total_collection'],
+            "seats": row['sum_total_seats'],
+            "occupied": row['sum_total_occupied'],
+            "occpency_percentile": row['occpency_avg_percentile']
+        })
+        
+        # Accumulate state totals
+        state_summary[state]["no_of_shows"] += row['no_of_shows']
+        state_summary[state]["sum_total_collection"] += row['sum_total_collection']
+        state_summary[state]["sum_total_seats"] += row['sum_total_seats']
+        state_summary[state]["sum_total_occupied"] += row['sum_total_occupied']
+        
+    # Calculate state-level formatted fields
+    for state, data in state_summary.items():
+        data["sum_total_collection_in_cr"] = f"{round(data['sum_total_collection'] / 10000000.0, 3)} CR"
+        
+        if data["sum_total_seats"] > 0:
+            data["occpency_avg_percentile"] = round((data["sum_total_occupied"] * 100.0) / data["sum_total_seats"], 2)
+        else:
+            data["occpency_avg_percentile"] = 0.0
+            
+    return state_summary
+
+@app.get("/api/v1/analytics/movies/{movie_id}/theaters")
+def get_movie_theaters(movie_id: str, city_id: int, date: str = None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = '''
+        SELECT t.theater_id, t.name as theater_name, count(s.show_id) as total_shows,
+               sum(m.net_collection) as total_collection,
+               sum(m.capacity) as total_capacity, sum(m.occupancy) as total_occupancy
+        FROM shows s
+        JOIN theaters t ON s.theater_id = t.theater_id
+        JOIN (
+            SELECT show_id, MAX(metric_id) as latest_metric_id
+            FROM show_metrics
+            GROUP BY show_id
+        ) latest ON s.show_id = latest.show_id
+        JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
+        WHERE s.movie_id = ? AND t.city_id = ?
+    '''
+    params = [movie_id, city_id]
+    if date:
+        query += ' AND s.show_date = ?'
+        params.append(date)
+    query += ' GROUP BY t.theater_id, t.name'
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    theater_list = [dict(row) for row in rows]
+    
+    summary = {
+        "total_theater_count": len(theater_list),
+        "total_Show_count": sum(t.get('total_shows', 0) for t in theater_list),
+        "sum_total_collection": sum(t.get('total_collection', 0) for t in theater_list),
+        "sum_total_collection_in_cr": f"{round(sum(t.get('total_collection', 0) for t in theater_list) / 10000000.0, 3)} CR",
+        "total_capacity": sum(t.get('total_capacity', 0) for t in theater_list),
+        "total_occupancy": sum(t.get('total_occupancy', 0) for t in theater_list),
+        "total_occupancy_percentile": 0.0,
+        "theaters": theater_list
+    }
+    
+    if summary["total_capacity"] > 0:
+        summary["total_occupancy_percentile"] = round((summary["total_occupancy"] * 100.0) / summary["total_capacity"], 2)
+        
+    return summary
+
+@app.get("/api/v1/analytics/movies/{movie_id}/shows")
+def get_movie_shows(movie_id: str, theater_id: str, date: str = None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = '''
+        SELECT t.name as theater_name, mov.title as movie_name, s.show_id, s.screen_name, s.show_time, s.show_date, s.is_finalized,
+               m.capacity, m.occupancy, m.net_collection, m.timestamp as last_updated, m.metric_id
+        FROM shows s
+        JOIN theaters t ON s.theater_id = t.theater_id
+        JOIN movies mov ON s.movie_id = mov.movie_id
+        JOIN (
+            SELECT show_id, MAX(metric_id) as latest_metric_id
+            FROM show_metrics
+            GROUP BY show_id
+        ) latest ON s.show_id = latest.show_id
+        JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
+        WHERE s.movie_id = ? AND s.theater_id = ?
+    '''
+    params = [movie_id, theater_id]
+    if date:
+        query += ' AND s.show_date = ?'
+        params.append(date)
+    query += ' ORDER BY s.show_time ASC'
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    
+    # Fetch price breakdown for all these metrics
+    metric_ids = [r['metric_id'] for r in rows if r['metric_id']]
+    prices_map = {}
+    if metric_ids:
+        placeholders = ','.join('?' for _ in metric_ids)
+        cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", metric_ids)
+        for p_row in cursor.fetchall():
+            mid = p_row['metric_id']
+            if mid not in prices_map:
+                prices_map[mid] = []
+            prices_map[mid].append({
+                "price": float(p_row['ticket_price']) if p_row['ticket_price'] else 0.0,
+                "capacity": p_row['capacity'],
+                "occupancy": p_row['occupancy']
+            })
+            
+    conn.close()
+    
+    shows = []
+    theater_name = ""
+    movie_name_val = ""
+    for row in rows:
+        d = dict(row)
+        theater_name = d.pop('theater_name', "")
+        movie_name_val = d.pop('movie_name', "")
+        
+        show_time_str = d.get('show_time')
+        if show_time_str and show_time_str != "Unknown":
+            try:
+                # District provides show_time in UTC
+                st = datetime.datetime.strptime(show_time_str, "%Y-%m-%dT%H:%M")
+                st_ist = st + datetime.timedelta(hours=5, minutes=30)
+                d['show_time_ist'] = st_ist.strftime("%I:%M %p")
+            except Exception:
+                d['show_time_ist'] = show_time_str
+        else:
+            d['show_time_ist'] = show_time_str
+            
+        metric_id = d.pop('metric_id', None)
+        d['price_capacity_breakdown'] = prices_map.get(metric_id, [])
+            
+        shows.append(d)
+        
+    return {
+        "theater_name": theater_name,
+        "movie_name": movie_name_val,
+        "shows_count": len(shows),
+        "shows": shows
+    }
 
 @app.get("/api/v1/analytics/theaters/{theater_id}/summary")
 def get_theater_summary(theater_id: str, date: str = None):
@@ -383,6 +556,35 @@ def get_theater_summary(theater_id: str, date: str = None):
         query += ' AND s.show_date = ?'
         params.append(date)
     query += ' GROUP BY s.movie_id, s.screen_name'
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in rows]
+
+@app.get("/api/v1/analytics/theaters/{theater_id}/shows")
+def get_theater_shows(theater_id: str, screen_name: str, date: str = None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = '''
+        SELECT s.show_id, mov.title as movie_name, s.show_time, s.show_date, s.is_finalized,
+               m.capacity, m.occupancy, m.net_collection, m.timestamp as last_updated
+        FROM shows s
+        JOIN movies mov ON s.movie_id = mov.movie_id
+        JOIN (
+            SELECT show_id, MAX(metric_id) as latest_metric_id
+            FROM show_metrics
+            GROUP BY show_id
+        ) latest ON s.show_id = latest.show_id
+        JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
+        WHERE s.theater_id = ? AND s.screen_name = ?
+    '''
+    params = [theater_id, screen_name]
+    if date:
+        query += ' AND s.show_date = ?'
+        params.append(date)
+    query += ' ORDER BY s.show_time ASC'
     
     cursor.execute(query, params)
     rows = cursor.fetchall()
