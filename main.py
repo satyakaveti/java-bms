@@ -3,11 +3,12 @@ from pydantic import BaseModel
 import uuid
 import uvicorn
 from typing import Dict, Any
-from scraper import run_scraping_job
+from scraper import run_scraping_job, fetch_regions
 try:
-    from district_scraper import run_district_scraping_job
+    from district_scraper import run_district_scraping_job, fetch_regions_district
 except ImportError:
     run_district_scraping_job = None
+    fetch_regions_district = None
 
 app = FastAPI(title="BookMyShow Data Analyzer")
 
@@ -150,6 +151,92 @@ async def get_district_analysis_status(jobId: str):
         response["error"] = job["error"]
         
     return response
+
+@app.get("/api/v1/bms/regions")
+def get_bms_regions():
+    regions = fetch_regions()
+    result = {}
+    for r in regions:
+        state = r.get("state_name") or "Unknown State"
+        city = r.get("name") or "Unknown City"
+        
+        if state not in result:
+            result[state] = {}
+        
+        result[state][city] = {
+            "code": r.get("code"),
+            "slug": r.get("slug"),
+            "lat": r.get("lat"),
+            "lon": r.get("lon")
+        }
+    return result
+
+@app.get("/api/v1/bms/regions/{region}")
+def get_bms_regions_by_name(region: str):
+    regions = fetch_regions()
+    result = {}
+    for r in regions:
+        state = r.get("state_name") or "Unknown State"
+        city = r.get("name") or "Unknown City"
+        
+        if state.lower() == region.lower():
+            if state not in result:
+                result[state] = {}
+            result[state][city] = {
+                "code": r.get("code"),
+                "slug": r.get("slug"),
+                "lat": r.get("lat"),
+                "lon": r.get("lon")
+            }
+    if not result:
+        raise HTTPException(status_code=404, detail=f"Region/State '{region}' not found")
+    return result
+
+@app.get("/api/v1/district/regions")
+def get_district_regions():
+    if not fetch_regions_district:
+        raise HTTPException(status_code=501, detail="District scraper not implemented yet")
+        
+    regions = fetch_regions_district()
+    result = {}
+    for r in regions:
+        state = r.get("state_name") or "Unknown State"
+        city = r.get("city_name") or "Unknown City"
+        
+        if state not in result:
+            result[state] = {}
+            
+        result[state][city] = {
+            "city_id": r.get("city_id"),
+            "city_key": r.get("city_key"),
+            "lat": r.get("city_lat"),
+            "lon": r.get("city_long")
+        }
+    return result
+
+@app.get("/api/v1/district/regions/{region}")
+def get_district_regions_by_name(region: str):
+    if not fetch_regions_district:
+        raise HTTPException(status_code=501, detail="District scraper not implemented yet")
+        
+    regions = fetch_regions_district()
+    result = {}
+    for r in regions:
+        state = r.get("state_name") or "Unknown State"
+        city = r.get("city_name") or "Unknown City"
+        
+        if state.lower() == region.lower():
+            if state not in result:
+                result[state] = {}
+            result[state][city] = {
+                "city_id": r.get("city_id"),
+                "city_key": r.get("city_key"),
+                "lat": r.get("city_lat"),
+                "lon": r.get("city_long")
+            }
+    if not result:
+        raise HTTPException(status_code=404, detail=f"Region/State '{region}' not found")
+    return result
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
