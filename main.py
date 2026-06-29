@@ -2,7 +2,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import uuid
 import uvicorn
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import asyncio
 import datetime
 import traceback
@@ -247,6 +247,55 @@ def get_theaters_by_city(city_name: str):
         t["city_name"] = city_name
         
     return theaters
+
+class SyncRequest(BaseModel):
+    region: Optional[str] = None
+
+@app.post("/api/v1/district/add-update-locations-theaters", status_code=202)
+def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: SyncRequest = None):
+    if not fetch_regions_district:
+        raise HTTPException(status_code=501, detail="District scraper not implemented yet")
+        
+    def sync_job():
+        try:
+            regions = fetch_regions_district()
+            
+            # If region is provided, filter the regions list
+            if sync_req and sync_req.region:
+                target_region = sync_req.region.lower()
+                regions = [r for r in regions if (r.get("state_name") or "").lower() == target_region]
+                
+            for r in regions:
+                c_id = r.get("city_id")
+                if not c_id: continue
+                c_name = r.get("city_name")
+                s_name = r.get("state_name", "Unknown State")
+                c_key = r.get("city_key")
+                
+                db_operations.upsert_location(int(c_id), c_name, s_name, c_key)
+                
+                theaters = fetch_cinemas_direct(c_name)
+                for t in theaters:
+                    tid = t.get("theater_id")
+                    if tid:
+                        db_operations.upsert_theater(
+                            theater_id=tid, 
+                            city_id=int(c_id), 
+                            name=t.get("theater_name"), 
+                            lat=t.get("lat"), 
+                            lon=t.get("lon"), 
+                            address=t.get("address")
+                        )
+        except Exception as e:
+            print(f"Error in sync job: {e}")
+            
+    background_tasks.add_task(sync_job)
+    
+    msg = "Master data sync for locations and theaters initiated in the background."
+    if sync_req and sync_req.region:
+        msg = f"Master data sync for region '{sync_req.region}' initiated in the background."
+        
+    return {"message": msg}
 
 # --- Analytics APIs ---
 

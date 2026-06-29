@@ -87,6 +87,18 @@ def init_db():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_metrics_show ON show_metrics(show_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_metric_prices_metric ON show_metric_prices(metric_id)')
     
+    cursor.execute("PRAGMA table_info(locations)")
+    columns = [info['name'] for info in cursor.fetchall()]
+    if 'city_key' not in columns:
+        cursor.execute("ALTER TABLE locations ADD COLUMN city_key TEXT")
+        
+    cursor.execute("PRAGMA table_info(theaters)")
+    columns = [info['name'] for info in cursor.fetchall()]
+    if 'lat' not in columns:
+        cursor.execute("ALTER TABLE theaters ADD COLUMN lat REAL")
+        cursor.execute("ALTER TABLE theaters ADD COLUMN lon REAL")
+        cursor.execute("ALTER TABLE theaters ADD COLUMN address TEXT")
+
     conn.commit()
     conn.close()
 

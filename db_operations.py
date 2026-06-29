@@ -15,29 +15,41 @@ def upsert_movie(movie_id, title, language):
     conn.commit()
     conn.close()
 
-def upsert_location(city_id, city_name, state_name):
+def upsert_location(city_id, city_name, state_name, city_key=None):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
-    INSERT INTO locations (city_id, city_name, state_name)
-    VALUES (?, ?, ?)
+    INSERT INTO locations (city_id, city_name, state_name, city_key)
+    VALUES (?, ?, ?, ?)
     ON CONFLICT(city_id) DO UPDATE SET
         city_name = excluded.city_name,
-        state_name = excluded.state_name
-    ''', (city_id, city_name, state_name))
+        state_name = excluded.state_name,
+        city_key = excluded.city_key
+    WHERE locations.city_name != excluded.city_name 
+       OR locations.state_name != excluded.state_name
+       OR IFNULL(locations.city_key, '') != IFNULL(excluded.city_key, '')
+    ''', (city_id, city_name, state_name, city_key))
     conn.commit()
     conn.close()
 
-def upsert_theater(theater_id, city_id, name):
+def upsert_theater(theater_id, city_id, name, lat=None, lon=None, address=None):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
-    INSERT INTO theaters (theater_id, city_id, name)
-    VALUES (?, ?, ?)
+    INSERT INTO theaters (theater_id, city_id, name, lat, lon, address)
+    VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(theater_id) DO UPDATE SET
         city_id = excluded.city_id,
-        name = excluded.name
-    ''', (theater_id, city_id, name))
+        name = excluded.name,
+        lat = excluded.lat,
+        lon = excluded.lon,
+        address = excluded.address
+    WHERE theaters.name != excluded.name 
+       OR theaters.city_id != excluded.city_id
+       OR IFNULL(theaters.lat, 0) != IFNULL(excluded.lat, 0)
+       OR IFNULL(theaters.lon, 0) != IFNULL(excluded.lon, 0)
+       OR IFNULL(theaters.address, '') != IFNULL(excluded.address, '')
+    ''', (theater_id, city_id, name, lat, lon, address))
     conn.commit()
     conn.close()
 
