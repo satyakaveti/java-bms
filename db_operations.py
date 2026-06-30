@@ -94,13 +94,16 @@ def upsert_theater(theater_id, city_id, name, lat=None, lon=None, address=None):
     INSERT INTO theaters (theater_id, city_id, name, lat, lon, address)
     VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(theater_id) DO UPDATE SET
-        city_id = excluded.city_id,
+        city_id = CASE 
+            WHEN excluded.city_id < 100 AND theaters.city_id > 100 THEN excluded.city_id 
+            ELSE theaters.city_id 
+        END,
         name = excluded.name,
         lat = excluded.lat,
         lon = excluded.lon,
         address = excluded.address
     WHERE theaters.name != excluded.name 
-       OR theaters.city_id != excluded.city_id
+       OR (excluded.city_id < 100 AND theaters.city_id > 100)
        OR IFNULL(theaters.lat, 0) != IFNULL(excluded.lat, 0)
        OR IFNULL(theaters.lon, 0) != IFNULL(excluded.lon, 0)
        OR IFNULL(theaters.address, '') != IFNULL(excluded.address, '')
