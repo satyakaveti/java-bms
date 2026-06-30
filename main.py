@@ -318,6 +318,7 @@ def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
                     c_name = r.get("city_name")
                     s_name = r.get("state_name", "Unknown State")
                     if c_id and c_name:
+                        print(f"[Full Run] Syncing Location: {c_name} ({s_name})")
                         db_operations.upsert_location(int(c_id), c_name, s_name)
             
             print(f"[Full Run] Getting active movies in Hyderabad for language: {req.language}")

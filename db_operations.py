@@ -15,7 +15,12 @@ def upsert_movie(movie_id, title, language, tollybo_movie_id=None):
     
     t_id = None
     if existing:
-        t_id = existing[0] if isinstance(existing, tuple) else existing.get("tollybo_movie_id")
+        try:
+            # sqlite3.Row and D1 dict both support dictionary-style bracket access
+            t_id = existing["tollybo_movie_id"]
+        except (KeyError, IndexError, TypeError):
+            # Fallback for standard tuple fetch if row_factory is ever disabled
+            t_id = existing[0] if isinstance(existing, tuple) else None
     
     # If not in DB, or if it is but tollybo_movie_id is null/empty
     if not existing or not t_id:
@@ -31,12 +36,17 @@ def upsert_movie(movie_id, title, language, tollybo_movie_id=None):
             if resp.status_code == 200:
                 resp_json = resp.json()
                 print(f"[Tollybo API] Response Payload: {resp_json}")
-                data = resp_json.get("data", [])
-                if data and len(data) > 0:
-                    tollybo_movie_id = data[0].get("id")
+                
+                if "id" in resp_json:
+                    tollybo_movie_id = resp_json.get("id")
                     print(f"[Tollybo API] Successfully extracted ID {tollybo_movie_id} for '{title}'")
                 else:
-                    print(f"[Tollybo API] Warning: 'data' array is empty for '{title}'")
+                    data = resp_json.get("data", [])
+                    if data and len(data) > 0:
+                        tollybo_movie_id = data[0].get("id")
+                        print(f"[Tollybo API] Successfully extracted ID {tollybo_movie_id} for '{title}'")
+                    else:
+                        print(f"[Tollybo API] Warning: Could not find 'id' or 'data' array for '{title}'")
             else:
                 print(f"[Tollybo API] Error response: {resp.text}")
                 
