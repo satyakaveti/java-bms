@@ -375,7 +375,7 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
                                 lon=t.get("lon"), 
                                 address=t.get("address")
                             )
-                    return (c_name, theaters)
+                    return (c_name, theaters, c_id)
                 except Exception as ex:
                     print(f"Error syncing region {c_name}: {ex}")
                     return None
@@ -397,13 +397,29 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
             
             sno = 1
             all_processed_theaters.sort(key=lambda x: x[0])  # Sort by city name
-            for city_name, theaters_list in all_processed_theaters:
+            for city_name, theaters_list, c_id in all_processed_theaters:
                 theaters_list.sort(key=lambda x: x.get('theater_name', '')) # Sort by theater name
                 for t in theaters_list:
                     t_name = t.get('theater_name', 'Unknown')
                     print(f"{sno:<6} | {city_name:<25} | {t_name}")
                     sno += 1
             print("="*100 + "\n")
+            
+            # Print City-wise count table
+            print("\n" + "="*70)
+            print("CITY-WISE THEATER COUNT")
+            print("="*70)
+            print(f"{'City ID':<10} | {'City':<25} | {'Count':<10}")
+            print("-" * 70)
+            
+            total_theaters = 0
+            for city_name, theaters_list, c_id in all_processed_theaters:
+                count = len(theaters_list)
+                total_theaters += count
+                print(f"{c_id:<10} | {city_name:<25} | {count:<10}")
+            print("-" * 70)
+            print(f"{'':<10} | {'TOTAL':<25} | {total_theaters:<10}")
+            print("="*70 + "\n")
                     
         except Exception as e:
             print(f"Error in overall sync job setup: {e}")
