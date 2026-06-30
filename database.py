@@ -106,7 +106,7 @@ def get_connection():
     if DB_MODE == "PROD":
         account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "3b6e853a302909cc7e6e38bf2010af9c")
         db_id = os.environ.get("CLOUDFLARE_D1_DATABASE_ID", "3ef29370-faeb-409f-b4ec-e0ddef604c6c")
-        api_token = os.environ.get("CLOUDFLARE_API_TOKEN", "cfut_MNDmI4Eqd8hVv3vJGdirlF0BmafiNzuuiEcACvK3aa3c21ed")
+        api_token = os.environ.get("CLOUDFLARE_API_TOKEN", "cfut_1Dv1wyy0dOWHGTN3UkQ3SSfHyif0yO8AB0ZuvAE90b48d928")
         
         if not account_id or not api_token:
             raise ValueError("CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN must be set for PROD mode.")
