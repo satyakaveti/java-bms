@@ -229,6 +229,19 @@ def get_theaters_by_state(state_name: str):
             try:
                 result = future.result()
                 if result:
+                    city_data = future_to_city[future]
+                    city_id = city_data.get("city_id")
+                    for t in result:
+                        tid = t.get("theater_id")
+                        if tid and city_id:
+                            db_operations.upsert_theater(
+                                theater_id=tid,
+                                city_id=int(city_id),
+                                name=t.get("theater_name"),
+                                lat=t.get("lat"),
+                                lon=t.get("lon"),
+                                address=t.get("address")
+                            )
                     all_theaters.extend(result)
             except Exception as e:
                 pass
@@ -243,8 +256,26 @@ def get_theaters_by_city(city_name: str):
     if not theaters:
         raise HTTPException(status_code=404, detail=f"No theaters found for city '{city_name}'")
         
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT city_id FROM locations WHERE LOWER(city_name) = ?", (city_name.lower(),))
+    row = cursor.fetchone()
+    conn.close()
+    
+    city_id = row['city_id'] if row else None
+        
     for t in theaters:
         t["city_name"] = city_name
+        tid = t.get("theater_id")
+        if tid and city_id:
+            db_operations.upsert_theater(
+                theater_id=tid,
+                city_id=city_id,
+                name=t.get("theater_name"),
+                lat=t.get("lat"),
+                lon=t.get("lon"),
+                address=t.get("address")
+            )
         
     return theaters
 
@@ -306,29 +337,48 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
                 target_region = sync_req.region.lower()
                 regions = [r for r in regions if (r.get("state_name") or "").lower() == target_region]
                 
-            for r in regions:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            
+            def process_region_sync(r):
                 c_id = r.get("city_id")
-                if not c_id: continue
+                if not c_id: return
                 c_name = r.get("city_name")
                 s_name = r.get("state_name", "Unknown State")
                 c_key = r.get("city_key")
                 
-                db_operations.upsert_location(int(c_id), c_name, s_name, c_key)
-                
-                theaters = fetch_cinemas_direct(c_name)
-                for t in theaters:
-                    tid = t.get("theater_id")
-                    if tid:
-                        db_operations.upsert_theater(
-                            theater_id=tid, 
-                            city_id=int(c_id), 
-                            name=t.get("theater_name"), 
-                            lat=t.get("lat"), 
-                            lon=t.get("lon"), 
-                            address=t.get("address")
-                        )
+                try:
+                    db_operations.upsert_location(int(c_id), c_name, s_name, c_key)
+                    
+                    # fetch_cinemas_direct does lower().replace(" ", "-")
+                    # To ensure it uses the exact correct slug provided by the API, we pass c_key (e.g. 'abu-dhabi') 
+                    # which will just remain 'abu-dhabi' after the replace logic in fetch_cinemas_direct.
+                    theaters = fetch_cinemas_direct(c_key if c_key else c_name)
+                    
+                    print(f"city : {c_name}, total thaters: {len(theaters)}, theaters list:")
+                    for idx, t in enumerate(theaters, 1):
+                        print(f"{idx}- {t.get('theater_name')}")
+                        
+                    for t in theaters:
+                        tid = t.get("theater_id")
+                        if tid:
+                            db_operations.upsert_theater(
+                                theater_id=tid, 
+                                city_id=int(c_id), 
+                                name=t.get("theater_name"), 
+                                lat=t.get("lat"), 
+                                lon=t.get("lon"), 
+                                address=t.get("address")
+                            )
+                except Exception as ex:
+                    print(f"Error syncing region {c_name}: {ex}")
+            
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = [executor.submit(process_region_sync, r) for r in regions]
+                for future in as_completed(futures):
+                    pass # Exceptions are caught inside process_region_sync
+                    
         except Exception as e:
-            print(f"Error in sync job: {e}")
+            print(f"Error in overall sync job setup: {e}")
             
     background_tasks.add_task(sync_job)
     
