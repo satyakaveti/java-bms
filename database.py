@@ -5,8 +5,8 @@ import requests
 import sys
 from dotenv import load_dotenv
 
-# Load environment variables from .env file immediately
-load_dotenv()
+# Load environment variables from .env file immediately and override any stale terminal exports
+load_dotenv(override=True)
 
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'collections.db')
 
