@@ -59,31 +59,14 @@ class D1Cursor:
             self.rowcount = 0
             return self
             
-        payload = []
-        for params in seq_of_params:
-            payload.append({
-                "sql": query,
-                "params": list(params)
-            })
-            
-        chunk_size = 50
         total_rows = 0
-        for i in range(0, len(payload), chunk_size):
-            chunk = payload[i:i + chunk_size]
-            res = requests.post(self.base_url, headers=self.headers, json=chunk, timeout=30)
-            try:
-                res.raise_for_status()
-            except requests.exceptions.HTTPError as e:
-                print(f"D1 API HTTPError: {res.text}")
-                raise e
+        # The D1 /query HTTP API expects an Object. Passing an array of objects
+        # throws "Expected object, received array". To bypass this without complex
+        # batching endpoint logic, we execute them sequentially.
+        for params in seq_of_params:
+            self.execute(query, params)
+            total_rows += max(0, self.rowcount)
             
-            data = res.json()
-            if not data.get("success"):
-                raise Exception(f"D1 Error: {data.get('errors')}")
-            for res_item in data.get("result", []):
-                meta = res_item.get("meta", {})
-                total_rows += meta.get("rows_written", meta.get("changes", 0))
-                
         self.rowcount = total_rows
         return self
 

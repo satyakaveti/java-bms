@@ -404,9 +404,10 @@ def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, 
                         db_operations.upsert_location(city_id, city_name, region.get("state_name", "Unknown State"))
                         db_operations.upsert_movie(str(target_entity_id), target_movie, "Unknown")
                         break
-            except Exception:
-                pass
-                
+            except Exception as e:
+                print(f"[{job_id}] Error resolving movie {target_movie} in {city_name}: {e}")
+                import traceback
+                traceback.print_exc()
         if not target_entity_id:
             jobs_db[job_id]["status"] = "FAILED"
             jobs_db[job_id]["error"] = "Movie could not be found in any major Zomato/District region."

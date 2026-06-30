@@ -13,8 +13,12 @@ def upsert_movie(movie_id, title, language, tollybo_movie_id=None):
     cursor.execute("SELECT tollybo_movie_id FROM movies WHERE movie_id = ?", (movie_id,))
     existing = cursor.fetchone()
     
+    t_id = None
+    if existing:
+        t_id = existing[0] if isinstance(existing, tuple) else existing.get("tollybo_movie_id")
+    
     # If not in DB, or if it is but tollybo_movie_id is null/empty
-    if not existing or not existing[0]:
+    if not existing or not t_id:
         try:
             year = datetime.datetime.now().year
             encoded_title = urllib.parse.quote(title)
