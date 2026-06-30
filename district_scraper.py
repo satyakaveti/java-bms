@@ -16,21 +16,8 @@ WEBSHARE_PROXIES = [
     # The other 8 proxies from the Webshare pool are explicitly blocked/timed out by Zomato's WAF
 ]
 
-def print_curl_request(method, url, headers, json_data=None):
-    curl_cmd = f"curl --location --request {method} '{url}' \\\n"
-    for k, v in headers.items():
-        curl_cmd += f"--header '{k}: {v}' \\\n"
-    if json_data:
-        import json
-        curl_cmd += f"--header 'Content-Type: application/json' \\\n"
-        curl_cmd += f"--data '{json.dumps(json_data)}'"
-    else:
-        # Remove the trailing slash and newline if no data
-        curl_cmd = curl_cmd.rsplit(' \\', 1)[0]
-    print("\n" + "="*50)
-    print(f"[{method}] CURL REQUEST:")
-    print(curl_cmd)
-    print("="*50 + "\n")
+def print_curl_request(method, url, headers=None, json_data=None):
+    print(f"{method} - {url}")
 
 def get_random_proxy():
     proxy_str = random.choice(WEBSHARE_PROXIES)
