@@ -2,16 +2,17 @@ import sqlite3
 import datetime
 from database import get_connection
 
-def upsert_movie(movie_id, title, language):
+def upsert_movie(movie_id, title, language, tollybo_movie_id=None):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
-    INSERT INTO movies (movie_id, title, language)
-    VALUES (?, ?, ?)
+    INSERT INTO movies (movie_id, title, language, tollybo_movie_id)
+    VALUES (?, ?, ?, ?)
     ON CONFLICT(movie_id) DO UPDATE SET
         title = excluded.title,
-        language = excluded.language
-    ''', (movie_id, title, language))
+        language = excluded.language,
+        tollybo_movie_id = COALESCE(excluded.tollybo_movie_id, movies.tollybo_movie_id)
+    ''', (movie_id, title, language, tollybo_movie_id))
     conn.commit()
     conn.close()
 

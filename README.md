@@ -78,20 +78,34 @@ You must have Python 3.11 or higher installed.
 
 ## 4. How to Run
 
+### LOCAL Mode (SQLite)
+By default, the application runs in LOCAL mode and uses a local SQLite database (`collections.db`).
+
 1. **Start the FastAPI Server:**
    ```bash
-   
    lsof -ti:8000 | xargs kill -9
-
    source venv/bin/activate
    
    python3 main.py
    ```
    *(Alternatively: `uvicorn main:app --reload`)*
 
-
 2. **Access the API Documentation:**
    Open your browser and navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). This provides an interactive Swagger UI to test the endpoints.
+
+### PROD Mode (Cloudflare D1 via HTTP REST API)
+Because this application uses web scraping packages (`curl_cffi`) that rely on native C-extensions to bypass Cloudflare protection, it **cannot** be deployed to Cloudflare Workers. It must run on a standard server (VPS, Docker). However, you can still use Cloudflare D1 as your remote database.
+
+To use D1, you must set the following environment variables before starting the server:
+
+```bash
+export DB_MODE="PROD"
+export CLOUDFLARE_ACCOUNT_ID="3b6e853a302909cc7e6e38bf2010af9c"
+export CLOUDFLARE_API_TOKEN="cfut_MNDmI4Eqd8hVv3vJGdirlF0BmafiNzuuiEcACvK3aa3c21ed"
+export CLOUDFLARE_D1_DATABASE_ID="3ef29370-faeb-409f-b4ec-e0ddef604c6c" # (Default from your snippet)
+
+python3 main.py
+```
 
 ---
 
@@ -423,4 +437,29 @@ We will expose read-only APIs to power the UI drill-downs. All aggregation (SUMs
     * **Response**: Returns the price-wise breakdown (capacity vs. occupancy at 150, 250, etc.) for the final/latest snapshot of a specific show.
 
 
+# Deployment
 
+While you might receive a `wrangler.toml` or `wrangler.json` snippet from Cloudflare to configure a Worker for D1:
+
+```json
+{
+  "d1_databases": [
+    {
+      "binding": "bms_district_db",
+      "database_name": "bms_district_db",
+      "database_id": "3ef29370-faeb-409f-b4ec-e0ddef604c6c"
+    }
+  ]
+}
+```
+
+This application is built for a standard server environment (VPS). We extract the `database_id` from the snippet and connect to the Cloudflare D1 HTTP REST API remotely.
+
+To create the DB using wrangler:
+```bash
+wrangler login
+# (tollybo@outlook.com)
+         
+wrangler d1 create bms_district_db
+```
+After creating it, make sure to generate an API Token in the Cloudflare dashboard with **D1 Edit/Read** permissions.
