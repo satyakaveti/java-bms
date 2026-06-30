@@ -2,9 +2,33 @@ import sqlite3
 import datetime
 from database import get_connection
 
+import requests
+import urllib.parse
+
 def upsert_movie(movie_id, title, language, tollybo_movie_id=None):
     conn = get_connection()
     cursor = conn.cursor()
+    
+    # Check if movie exists and if tollybo_movie_id is already populated
+    cursor.execute("SELECT tollybo_movie_id FROM movies WHERE movie_id = ?", (movie_id,))
+    existing = cursor.fetchone()
+    
+    # If not in DB, or if it is but tollybo_movie_id is null/empty
+    if not existing or not existing[0]:
+        try:
+            year = datetime.datetime.now().year
+            encoded_title = urllib.parse.quote(title)
+            api_url = f"https://web-api.tollybo.com/api/movies?name={encoded_title}&year={year}"
+            resp = requests.get(api_url, timeout=10)
+            
+            if resp.status_code == 200:
+                data = resp.json().get("data", [])
+                if data and len(data) > 0:
+                    tollybo_movie_id = data[0].get("id")
+                    print(f"[Tollybo API] Resolved '{title}' to ID {tollybo_movie_id}")
+        except Exception as e:
+            print(f"[Tollybo API] Error fetching tollybo_movie_id for {title}: {e}")
+
     cursor.execute('''
     INSERT INTO movies (movie_id, title, language, tollybo_movie_id)
     VALUES (?, ?, ?, ?)
@@ -13,6 +37,7 @@ def upsert_movie(movie_id, title, language, tollybo_movie_id=None):
         language = excluded.language,
         tollybo_movie_id = COALESCE(excluded.tollybo_movie_id, movies.tollybo_movie_id)
     ''', (movie_id, title, language, tollybo_movie_id))
+    
     conn.commit()
     conn.close()
 
@@ -36,6 +61,11 @@ def upsert_location(city_id, city_name, state_name, city_key=None):
 def upsert_theater(theater_id, city_id, name, lat=None, lon=None, address=None):
     conn = get_connection()
     cursor = conn.cursor()
+    
+    # Check if theater already exists to distinguish ADDED from UPDATED
+    cursor.execute("SELECT 1 FROM theaters WHERE theater_id = ?", (theater_id,))
+    existed = cursor.fetchone() is not None
+    
     cursor.execute('''
     INSERT INTO theaters (theater_id, city_id, name, lat, lon, address)
     VALUES (?, ?, ?, ?, ?, ?)
@@ -51,8 +81,18 @@ def upsert_theater(theater_id, city_id, name, lat=None, lon=None, address=None):
        OR IFNULL(theaters.lon, 0) != IFNULL(excluded.lon, 0)
        OR IFNULL(theaters.address, '') != IFNULL(excluded.address, '')
     ''', (theater_id, city_id, name, lat, lon, address))
+    
+    rowcount = cursor.rowcount
+    
     conn.commit()
     conn.close()
+    
+    if not existed:
+        return "ADDED"
+    elif rowcount > 0:
+        return "UPDATED"
+    else:
+        return "ALREADY_EXISTED"
 
 def upsert_show_and_record_metric(show_id, theater_id, movie_id, screen_name, show_time, show_date, capacity, occupancy, net_collection, price_breakdown=None):
     conn = get_connection()

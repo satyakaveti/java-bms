@@ -367,7 +367,7 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
                     for t in theaters:
                         tid = t.get("theater_id")
                         if tid:
-                            db_operations.upsert_theater(
+                            action = db_operations.upsert_theater(
                                 theater_id=tid, 
                                 city_id=int(c_id), 
                                 name=t.get("theater_name"), 
@@ -375,6 +375,7 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
                                 lon=t.get("lon"), 
                                 address=t.get("address")
                             )
+                            t['db_action'] = action
                     return (c_name, theaters, c_id)
                 except Exception as ex:
                     print(f"Error syncing region {c_name}: {ex}")
@@ -389,11 +390,11 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
                         all_processed_theaters.append(res)
             
             # Print final summary table
-            print("\n" + "="*100)
+            print("\n" + "="*120)
             print("FINAL SUMMARY: ALL THEATERS PROCESSED")
-            print("="*100)
-            print(f"{'S.No':<6} | {'City':<25} | {'Theater Name'}")
-            print("-" * 100)
+            print("="*120)
+            print(f"{'S.No':<6} | {'DB_ACTION':<17} | {'City':<25} | {'Theater Name'}")
+            print("-" * 120)
             
             sno = 1
             all_processed_theaters.sort(key=lambda x: x[0])  # Sort by city name
@@ -401,9 +402,10 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
                 theaters_list.sort(key=lambda x: x.get('theater_name', '')) # Sort by theater name
                 for t in theaters_list:
                     t_name = t.get('theater_name', 'Unknown')
-                    print(f"{sno:<6} | {city_name:<25} | {t_name}")
+                    db_action = t.get('db_action', 'UNKNOWN')
+                    print(f"{sno:<6} | {db_action:<17} | {city_name:<25} | {t_name}")
                     sno += 1
-            print("="*100 + "\n")
+            print("="*120 + "\n")
             
             # Print City-wise count table
             print("\n" + "="*70)
