@@ -24,6 +24,12 @@ async def startup_event():
     import database
     database.init_db()
     
+    db_mode = getattr(database, 'DB_MODE', 'LOCAL')
+    if db_mode == "PROD":
+        print(f"Connected DB: Cloudflare D1 (DB_MODE: {db_mode})")
+    else:
+        print(f"Connected DB: SQLite Local (DB_MODE: {db_mode})")
+    
     # Start the periodic background scheduler (Disabled per user request)
     # asyncio.create_task(run_scheduler())
 
@@ -341,7 +347,7 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
             
             def process_region_sync(r):
                 c_id = r.get("city_id")
-                if not c_id: return
+                if not c_id: return None
                 c_name = r.get("city_name")
                 s_name = r.get("state_name", "Unknown State")
                 c_key = r.get("city_key")
@@ -369,13 +375,35 @@ def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: S
                                 lon=t.get("lon"), 
                                 address=t.get("address")
                             )
+                    return (c_name, theaters)
                 except Exception as ex:
                     print(f"Error syncing region {c_name}: {ex}")
+                    return None
             
+            all_processed_theaters = []
             with ThreadPoolExecutor(max_workers=5) as executor:
                 futures = [executor.submit(process_region_sync, r) for r in regions]
                 for future in as_completed(futures):
-                    pass # Exceptions are caught inside process_region_sync
+                    res = future.result()
+                    if res:
+                        all_processed_theaters.append(res)
+            
+            # Print final summary table
+            print("\n" + "="*100)
+            print("FINAL SUMMARY: ALL THEATERS PROCESSED")
+            print("="*100)
+            print(f"{'S.No':<6} | {'City':<25} | {'Theater Name'}")
+            print("-" * 100)
+            
+            sno = 1
+            all_processed_theaters.sort(key=lambda x: x[0])  # Sort by city name
+            for city_name, theaters_list in all_processed_theaters:
+                theaters_list.sort(key=lambda x: x.get('theater_name', '')) # Sort by theater name
+                for t in theaters_list:
+                    t_name = t.get('theater_name', 'Unknown')
+                    print(f"{sno:<6} | {city_name:<25} | {t_name}")
+                    sno += 1
+            print("="*100 + "\n")
                     
         except Exception as e:
             print(f"Error in overall sync job setup: {e}")

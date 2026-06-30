@@ -104,7 +104,12 @@ export CLOUDFLARE_ACCOUNT_ID="3b6e853a302909cc7e6e38bf2010af9c"
 export CLOUDFLARE_API_TOKEN="cfut_MNDmI4Eqd8hVv3vJGdirlF0BmafiNzuuiEcACvK3aa3c21ed"
 export CLOUDFLARE_D1_DATABASE_ID="3ef29370-faeb-409f-b4ec-e0ddef604c6c" # (Default from your snippet)
 
-python3 main.py
+# To run locally with SQLite:
+python3 main.py LOCAL
+
+# To run connected to Cloudflare D1:
+python3 main.py PROD
+
 ```
 
 ---
