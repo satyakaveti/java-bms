@@ -19,15 +19,25 @@ def upsert_movie(movie_id, title, language, tollybo_movie_id=None):
             year = datetime.datetime.now().year
             encoded_title = urllib.parse.quote(title)
             api_url = f"https://web-api.tollybo.com/api/movies?name={encoded_title}&year={year}"
+            print(f"[Tollybo API] Making request: {api_url}")
+            
             resp = requests.get(api_url, timeout=10)
+            print(f"[Tollybo API] Response Status: {resp.status_code}")
             
             if resp.status_code == 200:
-                data = resp.json().get("data", [])
+                resp_json = resp.json()
+                print(f"[Tollybo API] Response Payload: {resp_json}")
+                data = resp_json.get("data", [])
                 if data and len(data) > 0:
                     tollybo_movie_id = data[0].get("id")
-                    print(f"[Tollybo API] Resolved '{title}' to ID {tollybo_movie_id}")
+                    print(f"[Tollybo API] Successfully extracted ID {tollybo_movie_id} for '{title}'")
+                else:
+                    print(f"[Tollybo API] Warning: 'data' array is empty for '{title}'")
+            else:
+                print(f"[Tollybo API] Error response: {resp.text}")
+                
         except Exception as e:
-            print(f"[Tollybo API] Error fetching tollybo_movie_id for {title}: {e}")
+            print(f"[Tollybo API] Exception fetching tollybo_movie_id for {title}: {e}")
 
     cursor.execute('''
     INSERT INTO movies (movie_id, title, language, tollybo_movie_id)

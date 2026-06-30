@@ -300,6 +300,26 @@ def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
         
     def full_run_job():
         try:
+            from district_scraper import fetch_regions_district
+            import db_operations
+            
+            print(f"[Full Run] Initializing and syncing locations from district...")
+            all_regions = fetch_regions_district()
+            
+            # Filter regions down to just the ones requested across all states
+            target_regions_map = {}
+            for state in req.regions:
+                state_regions = [r for r in all_regions if r.get("state_name", "").lower() == state.lower()]
+                target_regions_map[state] = state_regions
+                
+                print(f"[Full Run] Syncing {len(state_regions)} locations for {state} to database...")
+                for r in state_regions:
+                    c_id = r.get("city_id")
+                    c_name = r.get("city_name")
+                    s_name = r.get("state_name", "Unknown State")
+                    if c_id and c_name:
+                        db_operations.upsert_location(int(c_id), c_name, s_name)
+            
             print(f"[Full Run] Getting active movies in Hyderabad for language: {req.language}")
             movies_resp = get_movies_by_region_district("Hyderabad", language=req.language)
             movies = movies_resp.get("movies", []) if isinstance(movies_resp, dict) else []
@@ -317,9 +337,10 @@ def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
                 for state in req.regions:
                     job_id = str(uuid.uuid4())
                     print(f"[Full Run] Starting scraping job {job_id} for '{movie_name}' in state '{state}'")
-                    # This will scrape and save to movies, shows, show_metrics, show_metric_prices
                     jobs_db[job_id] = {"status": "PROCESSING", "data": None, "error": None}
-                    run_district_scraping_job(job_id, movie_name, jobs_db, target_state=state)
+                    
+                    preloaded = target_regions_map.get(state, [])
+                    run_district_scraping_job(job_id, movie_name, jobs_db, target_state=state, preloaded_regions=preloaded)
                     
             print("[Full Run] Completed successfully.")
         except Exception as e:

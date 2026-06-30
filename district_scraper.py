@@ -344,30 +344,37 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
         
     return theaters
 
-def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, target_city=None):
+def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, target_city=None, preloaded_regions=None):
     try:
         final_data = {
             "movie": target_movie,
             "states": {}
         }
         
-        print(f"[{job_id}] Fetching district.in regions...")
-        regions = fetch_regions_district()
-        
-        # Pre-populate all regions in DB to ensure FK constraints and joins work
-        for r in regions:
-            c_id = r.get("city_id")
-            c_name = r.get("city_name")
-            s_name = r.get("state_name", "Unknown State")
-            if c_id and c_name:
-                db_operations.upsert_location(int(c_id), c_name, s_name)
+        if preloaded_regions is not None:
+            regions = preloaded_regions
+            print(f"[{job_id}] Using {len(regions)} preloaded regions (skipping fetch & sync)...")
+        else:
+            print(f"[{job_id}] Fetching district.in regions...")
+            regions = fetch_regions_district()
+            
+            if target_state:
+                regions = [r for r in regions if r.get("state_name", "").lower() == target_state.lower()]
                 
-        if target_state:
-            regions = [r for r in regions if r.get("state_name", "").lower() == target_state.lower()]
-            
-        if target_city:
-            regions = [r for r in regions if r.get("city_name", "").lower() == target_city.lower()]
-            
+            if target_city:
+                regions = [r for r in regions if r.get("city_name", "").lower() == target_city.lower()]
+                
+            # Pre-populate regions in DB to ensure FK constraints and joins work
+            print(f"[{job_id}] Syncing {len(regions)} locations to database... (this may take a moment)")
+            for i, r in enumerate(regions):
+                c_id = r.get("city_id")
+                c_name = r.get("city_name")
+                s_name = r.get("state_name", "Unknown State")
+                if c_id and c_name:
+                    print(f"[{job_id}] Syncing Location: {c_name} ({s_name})")
+                    db_operations.upsert_location(int(c_id), c_name, s_name)
+            print(f"[{job_id}] Finished syncing locations.")
+        
         target_entity_id = None
         target_movie_slug = "movie"
         
@@ -430,6 +437,7 @@ def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, 
                             continue
                             
                         theater_name = theater.get("theaterName")
+                        print(f"[{job_id}] Syncing Theater: {theater_name} in {city_name}")
                         db_operations.upsert_theater(str(theater_id), city_id, theater_name)
                         
                         for show in theater.get("shows", []):

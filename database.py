@@ -34,7 +34,11 @@ class D1Cursor:
             "params": list(params)
         }
         res = requests.post(self.base_url, headers=self.headers, json=payload, timeout=30)
-        res.raise_for_status()
+        try:
+            res.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f"D1 API HTTPError: {res.text}")
+            raise e
         data = res.json()
         if data.get("success"):
             result = data["result"][0]
@@ -67,7 +71,11 @@ class D1Cursor:
         for i in range(0, len(payload), chunk_size):
             chunk = payload[i:i + chunk_size]
             res = requests.post(self.base_url, headers=self.headers, json=chunk, timeout=30)
-            res.raise_for_status()
+            try:
+                res.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                print(f"D1 API HTTPError: {res.text}")
+                raise e
             
             data = res.json()
             if not data.get("success"):
