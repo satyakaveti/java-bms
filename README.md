@@ -96,21 +96,25 @@ By default, the application runs in LOCAL mode and uses a local SQLite database 
 ### PROD Mode (Cloudflare D1 via HTTP REST API)
 Because this application uses web scraping packages (`curl_cffi`) that rely on native C-extensions to bypass Cloudflare protection, it **cannot** be deployed to Cloudflare Workers. It must run on a standard server (VPS, Docker). However, you can still use Cloudflare D1 as your remote database.
 
-To use D1, you must set the following environment variables before starting the server:
+To securely manage your credentials and environment, we use a hidden `.env` file. 
+
+Create a `.env` file in the root of your project and configure it as follows:
+
+```env
+# Switch this to "LOCAL" to run against the local SQLite database
+DB_MODE="PROD"
+
+CLOUDFLARE_ACCOUNT_ID="your_cloudflare_account_id"
+CLOUDFLARE_D1_DATABASE_ID="your_d1_database_id"
+CLOUDFLARE_API_TOKEN="your_d1_api_token"
+```
+
+Once your `.env` is configured, simply start the server:
 
 ```bash
-export DB_MODE="PROD"
-export CLOUDFLARE_ACCOUNT_ID="3b6e853a302909cc7e6e38bf2010af9c"
-export CLOUDFLARE_API_TOKEN="cfut_MNDmI4Eqd8hVv3vJGdirlF0BmafiNzuuiEcACvK3aa3c21ed"
-export CLOUDFLARE_D1_DATABASE_ID="3ef29370-faeb-409f-b4ec-e0ddef604c6c" # (Default from your snippet)
-
-# To run locally with SQLite:
-python3 main.py LOCAL
-
-# To run connected to Cloudflare D1:
-python3 main.py PROD
-
+python3 main.py
 ```
+*(The application will automatically read `.env` and boot in the corresponding mode).*
 
 ---
 

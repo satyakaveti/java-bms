@@ -3,14 +3,14 @@ import os
 import requests
 
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables from .env file immediately
+load_dotenv()
 
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'collections.db')
 
-DB_MODE = "LOCAL"
-if len(sys.argv) > 1 and sys.argv[1].upper() in ["LOCAL", "PROD"]:
-    DB_MODE = sys.argv[1].upper()
-else:
-    DB_MODE = os.environ.get("DB_MODE", "LOCAL").upper()
+DB_MODE = os.environ.get("DB_MODE", "LOCAL").upper()
 
 class D1Cursor:
     def __init__(self, account_id, db_id, api_token):
@@ -104,9 +104,9 @@ class D1Connection:
 
 def get_connection():
     if DB_MODE == "PROD":
-        account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "3b6e853a302909cc7e6e38bf2010af9c")
-        db_id = os.environ.get("CLOUDFLARE_D1_DATABASE_ID", "3ef29370-faeb-409f-b4ec-e0ddef604c6c")
-        api_token = os.environ.get("CLOUDFLARE_API_TOKEN", "cfut_1Dv1wyy0dOWHGTN3UkQ3SSfHyif0yO8AB0ZuvAE90b48d928")
+        account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
+        db_id = os.environ.get("CLOUDFLARE_D1_DATABASE_ID")
+        api_token = os.environ.get("CLOUDFLARE_API_TOKEN")
         
         if not account_id or not api_token:
             raise ValueError("CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN must be set for PROD mode.")
