@@ -17,12 +17,19 @@ except ImportError:
     get_movies_by_region_district = None
     get_movies_by_region_district = None
 
-app = FastAPI(title="District Ticketing Analyzer")
+app = FastAPI(
+    title="District Ticketing Analyzer",
+    docs_url="/bms-district-api-docs",
+    redoc_url="/bms-district-api-redoc"
+)
 
 @app.on_event("startup")
 async def startup_event():
     import database
+    import asyncio
+    
     database.init_db()
+    asyncio.create_task(cron_scheduler())
     
     db_mode = getattr(database, 'DB_MODE', 'LOCAL')
     if db_mode == "PROD":
@@ -293,63 +300,96 @@ class FullRunRequest(BaseModel):
     language: str
     movieName: Optional[str] = None
 
+def execute_full_run_job(req: FullRunRequest):
+    try:
+        from district_scraper import fetch_regions_district, run_district_scraping_job, get_movies_by_region_district
+        import db_operations
+        
+        print(f"[Full Run] Initializing and syncing locations from district...")
+        all_regions = fetch_regions_district()
+        
+        # Filter regions down to just the ones requested across all states
+        target_regions_map = {}
+        for state in req.regions:
+            state_regions = [r for r in all_regions if r.get("state_name", "").lower() == state.lower()]
+            target_regions_map[state] = state_regions
+            
+            print(f"[Full Run] Syncing {len(state_regions)} locations for {state} to database...")
+            for r in state_regions:
+                c_id = r.get("city_id")
+                c_name = r.get("city_name")
+                s_name = r.get("state_name", "Unknown State")
+                if c_id and c_name:
+                    print(f"[Full Run] Syncing Location: {c_name} ({s_name})")
+                    db_operations.upsert_location(int(c_id), c_name, s_name)
+        
+        print(f"[Full Run] Getting active movies in Hyderabad for language: {req.language}")
+        movies_resp = get_movies_by_region_district("Hyderabad", language=req.language)
+        movies = movies_resp.get("movies", []) if isinstance(movies_resp, dict) else []
+        print(f"[Full Run] Found {len(movies)} movies.")
+        
+        for m in movies:
+            movie_name = m.get("title")
+            if not movie_name: continue
+            
+            # If a specific movieName is requested, skip all others
+            if req.movieName and req.movieName.lower().replace(" ", "") not in movie_name.lower().replace(" ", ""):
+                continue
+            
+            print(f"\n[Full Run] Processing movie: {movie_name}")
+            for state in req.regions:
+                job_id = str(uuid.uuid4())
+                print(f"[Full Run] Starting scraping job {job_id} for '{movie_name}' in state '{state}'")
+                jobs_db[job_id] = {"status": "PROCESSING", "data": None, "error": None}
+                
+                preloaded = target_regions_map.get(state, [])
+                run_district_scraping_job(job_id, movie_name, jobs_db, target_state=state, preloaded_regions=preloaded)
+                
+        print("[Full Run] Completed successfully.")
+    except Exception as e:
+        print(f"[Full Run] Error: {e}")
+        import traceback
+        traceback.print_exc()
+
 @app.post("/api/v1/district/full-run", status_code=202)
 def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
+    from district_scraper import fetch_regions_district
     if not fetch_regions_district:
         raise HTTPException(status_code=501, detail="District scraper not implemented yet")
         
-    def full_run_job():
+    background_tasks.add_task(execute_full_run_job, req)
+    return {"status": "ACCEPTED", "message": f"Full run started in background for {req.regions} and language {req.language}"}
+
+async def cron_scheduler():
+    import asyncio
+    import os
+    
+    while True:
         try:
-            from district_scraper import fetch_regions_district
-            import db_operations
-            
-            print(f"[Full Run] Initializing and syncing locations from district...")
-            all_regions = fetch_regions_district()
-            
-            # Filter regions down to just the ones requested across all states
-            target_regions_map = {}
-            for state in req.regions:
-                state_regions = [r for r in all_regions if r.get("state_name", "").lower() == state.lower()]
-                target_regions_map[state] = state_regions
+            enabled = os.environ.get("CRON_ENABLED", "false").lower() == "true"
+            if enabled:
+                print("\n[Scheduler] CRON_ENABLED is true. Triggering scheduled full run...")
+                regions_env = os.environ.get("CRON_REGIONS", "")
+                regions = [r.strip() for r in regions_env.split(",")] if regions_env else []
+                lang = os.environ.get("CRON_LANGUAGE", "Telugu")
+                movie = os.environ.get("CRON_MOVIENAME", "")
+                if not movie: 
+                    movie = None
                 
-                print(f"[Full Run] Syncing {len(state_regions)} locations for {state} to database...")
-                for r in state_regions:
-                    c_id = r.get("city_id")
-                    c_name = r.get("city_name")
-                    s_name = r.get("state_name", "Unknown State")
-                    if c_id and c_name:
-                        print(f"[Full Run] Syncing Location: {c_name} ({s_name})")
-                        db_operations.upsert_location(int(c_id), c_name, s_name)
-            
-            print(f"[Full Run] Getting active movies in Hyderabad for language: {req.language}")
-            movies_resp = get_movies_by_region_district("Hyderabad", language=req.language)
-            movies = movies_resp.get("movies", []) if isinstance(movies_resp, dict) else []
-            print(f"[Full Run] Found {len(movies)} movies.")
-            
-            for m in movies:
-                movie_name = m.get("title")
-                if not movie_name: continue
+                req = FullRunRequest(regions=regions, language=lang, movieName=movie)
                 
-                # If a specific movieName is requested, skip all others
-                if req.movieName and req.movieName.lower().replace(" ", "") not in movie_name.lower().replace(" ", ""):
-                    continue
+                loop = asyncio.get_running_loop()
+                # Run the blocking function in a separate thread
+                await loop.run_in_executor(None, execute_full_run_job, req)
                 
-                print(f"\n[Full Run] Processing movie: {movie_name}")
-                for state in req.regions:
-                    job_id = str(uuid.uuid4())
-                    print(f"[Full Run] Starting scraping job {job_id} for '{movie_name}' in state '{state}'")
-                    jobs_db[job_id] = {"status": "PROCESSING", "data": None, "error": None}
-                    
-                    preloaded = target_regions_map.get(state, [])
-                    run_district_scraping_job(job_id, movie_name, jobs_db, target_state=state, preloaded_regions=preloaded)
-                    
-            print("[Full Run] Completed successfully.")
         except Exception as e:
-            print(f"[Full Run] Error: {e}")
+            print(f"[Scheduler] Error in cron loop: {e}")
+            import traceback
             traceback.print_exc()
             
-    background_tasks.add_task(full_run_job)
-    return {"message": f"Full run for {req.language} movies in {len(req.regions)} regions initiated in the background."}
+        interval = int(os.environ.get("CRON_INTERVAL_MINUTES", "20"))
+        # Wait before next iteration
+        await asyncio.sleep(interval * 60)
 
 @app.post("/api/v1/district/add-update-locations-theaters", status_code=202)
 def add_update_locations_theaters(background_tasks: BackgroundTasks, sync_req: SyncRequest = None):
