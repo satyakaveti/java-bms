@@ -281,7 +281,7 @@ def get_theaters_by_city(city_name: str):
         
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT city_id FROM locations WHERE LOWER(city_name) = ?", (city_name.lower(),))
+    cursor.execute("SELECT city_id FROM locations WHERE LOWER(city_name) = %s", (city_name.lower(),))
     row = cursor.fetchone()
     conn.close()
     
@@ -529,11 +529,11 @@ def get_movie_summary(movie_id: str, date: str = None):
             GROUP BY show_id
         ) latest ON s.show_id = latest.show_id
         JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
-        WHERE s.movie_id = ?
+        WHERE s.movie_id = %s
     '''
     params = [movie_id]
     if date:
-        query += ' AND s.show_date = ?'
+        query += ' AND s.show_date = %s'
         params.append(date)
     query += ' GROUP BY l.state_name, l.city_name'
     
@@ -596,11 +596,11 @@ def get_movie_theaters(movie_id: str, city_id: int, date: str = None):
             GROUP BY show_id
         ) latest ON s.show_id = latest.show_id
         JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
-        WHERE s.movie_id = ? AND t.city_id = ?
+        WHERE s.movie_id = %s AND t.city_id = %s
     '''
     params = [movie_id, city_id]
     if date:
-        query += ' AND s.show_date = ?'
+        query += ' AND s.show_date = %s'
         params.append(date)
     query += ' GROUP BY t.theater_id, t.name'
     
@@ -642,11 +642,11 @@ def get_movie_shows(movie_id: str, theater_id: str, date: str = None):
             GROUP BY show_id
         ) latest ON s.show_id = latest.show_id
         JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
-        WHERE s.movie_id = ? AND s.theater_id = ?
+        WHERE s.movie_id = %s AND s.theater_id = %s
     '''
     params = [movie_id, theater_id]
     if date:
-        query += ' AND s.show_date = ?'
+        query += ' AND s.show_date = %s'
         params.append(date)
     query += ' ORDER BY s.show_time ASC'
     
@@ -660,7 +660,7 @@ def get_movie_shows(movie_id: str, theater_id: str, date: str = None):
         chunk_size = 50
         for i in range(0, len(metric_ids), chunk_size):
             chunk = metric_ids[i:i + chunk_size]
-            placeholders = ','.join('?' for _ in chunk)
+            placeholders = ','.join('%s' for _ in chunk)
             cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", chunk)
             for p_row in cursor.fetchall():
                 mid = p_row['metric_id']
@@ -722,11 +722,11 @@ def get_theater_summary(theater_id: str, date: str = None):
             GROUP BY show_id
         ) latest ON s.show_id = latest.show_id
         JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
-        WHERE s.theater_id = ?
+        WHERE s.theater_id = %s
     '''
     params = [theater_id]
     if date:
-        query += ' AND s.show_date = ?'
+        query += ' AND s.show_date = %s'
         params.append(date)
     query += ' ORDER BY s.show_time ASC'
     
@@ -740,7 +740,7 @@ def get_theater_summary(theater_id: str, date: str = None):
         chunk_size = 50
         for i in range(0, len(metric_ids), chunk_size):
             chunk = metric_ids[i:i + chunk_size]
-            placeholders = ','.join('?' for _ in chunk)
+            placeholders = ','.join('%s' for _ in chunk)
             cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", chunk)
             for p_row in cursor.fetchall():
                 mid = p_row['metric_id']
@@ -797,11 +797,11 @@ def get_theater_shows(theater_id: str, screen_name: str, date: str = None):
             GROUP BY show_id
         ) latest ON s.show_id = latest.show_id
         JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
-        WHERE s.theater_id = ? AND s.screen_name = ?
+        WHERE s.theater_id = %s AND s.screen_name = %s
     '''
     params = [theater_id, screen_name]
     if date:
-        query += ' AND s.show_date = ?'
+        query += ' AND s.show_date = %s'
         params.append(date)
     query += ' ORDER BY s.show_time ASC'
     
@@ -817,7 +817,7 @@ def get_show_price_breakdown(show_id: str):
     cursor = conn.cursor()
     
     # Get latest metric snapshot for this show
-    cursor.execute('SELECT metric_id FROM show_metrics WHERE show_id = ? ORDER BY timestamp DESC LIMIT 1', (show_id,))
+    cursor.execute('SELECT metric_id FROM show_metrics WHERE show_id = %s ORDER BY timestamp DESC LIMIT 1', (show_id,))
     row = cursor.fetchone()
     if not row:
         conn.close()
@@ -826,7 +826,7 @@ def get_show_price_breakdown(show_id: str):
     metric_id = row['metric_id']
     
     # Fetch price breakdown for this metric
-    cursor.execute('SELECT ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id = ? ORDER BY ticket_price DESC', (metric_id,))
+    cursor.execute('SELECT ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id = %s ORDER BY ticket_price DESC', (metric_id,))
     rows = cursor.fetchall()
     conn.close()
     
@@ -852,7 +852,7 @@ def get_day_wise_breakdown_by_tollybo_movie_id(tollybo_movie_id: int, date: str)
             GROUP BY show_id
         ) latest ON s.show_id = latest.show_id
         JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
-        WHERE mov.tollybo_movie_id = ? AND s.show_date = ?
+        WHERE mov.tollybo_movie_id = %s AND s.show_date = %s
     '''
     
     cursor.execute(query, (tollybo_movie_id, date))
@@ -868,7 +868,7 @@ def get_day_wise_breakdown_by_tollybo_movie_id(tollybo_movie_id: int, date: str)
         chunk_size = 50
         for i in range(0, len(metric_ids), chunk_size):
             chunk = metric_ids[i:i + chunk_size]
-            placeholders = ','.join('?' for _ in chunk)
+            placeholders = ','.join('%s' for _ in chunk)
             cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", chunk)
             for p_row in cursor.fetchall():
                 p_dict = dict(p_row)
@@ -1061,7 +1061,7 @@ def get_dates_history_tollybo_movie_id(tollybo_movie_id: int):
         SELECT DISTINCT s.show_date
         FROM shows s
         JOIN movies mov ON s.movie_id = mov.movie_id
-        WHERE mov.tollybo_movie_id = ?
+        WHERE mov.tollybo_movie_id = %s
         ORDER BY s.show_date ASC
     '''
     
@@ -1091,13 +1091,13 @@ def get_theaters_list(req: TheatersListRequest):
     params = []
     
     if req.theater_id:
-        query += " AND t.theater_id = ?"
+        query += " AND t.theater_id = %s"
         params.append(req.theater_id)
     if req.city_id:
-        query += " AND t.city_id = ?"
+        query += " AND t.city_id = %s"
         params.append(req.city_id)
     if req.state_name:
-        query += " AND l.state_name = ?"
+        query += " AND l.state_name = %s"
         params.append(req.state_name)
         
     cursor.execute(query, params)
@@ -1119,7 +1119,7 @@ def get_regions_list():
 def get_cities_list(state: str):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT city_id, city_name FROM locations WHERE state_name = ? ORDER BY city_name ASC", (state,))
+    cursor.execute("SELECT DISTINCT city_id, city_name FROM locations WHERE state_name = %s ORDER BY city_name ASC", (state,))
     rows = cursor.fetchall()
     conn.close()
     return [{"city_id": dict(r).get('city_id'), "city_name": dict(r).get('city_name')} for r in rows]
@@ -1132,7 +1132,7 @@ def get_theater_info(theater_id: str):
         SELECT t.*, l.city_name, l.state_name 
         FROM theaters t 
         JOIN locations l ON t.city_id = l.city_id 
-        WHERE t.theater_id = ?
+        WHERE t.theater_id = %s
     ''', (theater_id,))
     row = cursor.fetchone()
     conn.close()
@@ -1150,7 +1150,7 @@ def get_dates_history_by_theater_id(theater_id: str = Query(..., alias="theater-
     query = '''
         SELECT DISTINCT s.show_date
         FROM shows s
-        WHERE s.theater_id = ?
+        WHERE s.theater_id = %s
         ORDER BY s.show_date ASC
     '''
     
