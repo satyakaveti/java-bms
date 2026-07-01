@@ -1062,7 +1062,7 @@ def get_dates_history_tollybo_movie_id(tollybo_movie_id: int):
         FROM shows s
         JOIN movies mov ON s.movie_id = mov.movie_id
         WHERE mov.tollybo_movie_id = ?
-        ORDER BY s.show_date DESC
+        ORDER BY s.show_date ASC
     '''
     
     cursor.execute(query, (tollybo_movie_id,))
@@ -1151,7 +1151,7 @@ def get_dates_history_by_theater_id(theater_id: str = Query(..., alias="theater-
         SELECT DISTINCT s.show_date
         FROM shows s
         WHERE s.theater_id = ?
-        ORDER BY s.show_date DESC
+        ORDER BY s.show_date ASC
     '''
     
     cursor.execute(query, (theater_id,))
