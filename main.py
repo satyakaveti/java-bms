@@ -1,4 +1,5 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid
 import uvicorn
@@ -21,6 +22,15 @@ app = FastAPI(
     title="District Ticketing Analyzer",
     docs_url="/bms-district-api-docs",
     redoc_url="/bms-district-api-redoc"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://tollybo.com"],
+    allow_origin_regex=r"https://.*\.tollybo\.com|http://localhost:\d+|http://127\.0\.0\.1:\d+",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.on_event("startup")
