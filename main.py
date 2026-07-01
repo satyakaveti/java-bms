@@ -1,4 +1,4 @@
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel
 import uuid
 import uvicorn
@@ -647,17 +647,20 @@ def get_movie_shows(movie_id: str, theater_id: str, date: str = None):
     metric_ids = [r['metric_id'] for r in rows if r['metric_id']]
     prices_map = {}
     if metric_ids:
-        placeholders = ','.join('?' for _ in metric_ids)
-        cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", metric_ids)
-        for p_row in cursor.fetchall():
-            mid = p_row['metric_id']
-            if mid not in prices_map:
-                prices_map[mid] = []
-            prices_map[mid].append({
-                "price": float(p_row['ticket_price']) if p_row['ticket_price'] else 0.0,
-                "capacity": p_row['capacity'],
-                "occupancy": p_row['occupancy']
-            })
+        chunk_size = 50
+        for i in range(0, len(metric_ids), chunk_size):
+            chunk = metric_ids[i:i + chunk_size]
+            placeholders = ','.join('?' for _ in chunk)
+            cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", chunk)
+            for p_row in cursor.fetchall():
+                mid = p_row['metric_id']
+                if mid not in prices_map:
+                    prices_map[mid] = []
+                prices_map[mid].append({
+                    "price": float(p_row['ticket_price']) if p_row['ticket_price'] else 0.0,
+                    "capacity": p_row['capacity'],
+                    "occupancy": p_row['occupancy']
+                })
             
     conn.close()
     
@@ -724,17 +727,20 @@ def get_theater_summary(theater_id: str, date: str = None):
     metric_ids = [r['metric_id'] for r in rows if r['metric_id']]
     prices_map = {}
     if metric_ids:
-        placeholders = ','.join('?' for _ in metric_ids)
-        cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", metric_ids)
-        for p_row in cursor.fetchall():
-            mid = p_row['metric_id']
-            if mid not in prices_map:
-                prices_map[mid] = []
-            prices_map[mid].append({
-                "price": float(p_row['ticket_price']) if p_row['ticket_price'] else 0.0,
-                "capacity": p_row['capacity'],
-                "occupancy": p_row['occupancy']
-            })
+        chunk_size = 50
+        for i in range(0, len(metric_ids), chunk_size):
+            chunk = metric_ids[i:i + chunk_size]
+            placeholders = ','.join('?' for _ in chunk)
+            cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", chunk)
+            for p_row in cursor.fetchall():
+                mid = p_row['metric_id']
+                if mid not in prices_map:
+                    prices_map[mid] = []
+                prices_map[mid].append({
+                    "price": float(p_row['ticket_price']) if p_row['ticket_price'] else 0.0,
+                    "capacity": p_row['capacity'],
+                    "occupancy": p_row['occupancy']
+                })
             
     conn.close()
     
@@ -815,6 +821,339 @@ def get_show_price_breakdown(show_id: str):
     conn.close()
     
     return [dict(r) for r in rows]
+
+@app.get("/api/v1/analytics/day-wise-breakdown-by-tollybo-movie-id")
+def get_day_wise_breakdown_by_tollybo_movie_id(tollybo_movie_id: int, date: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = '''
+        SELECT l.state_name, l.city_name, t.theater_id, t.name as theater_name,
+               s.show_id, s.screen_name, s.show_date, s.show_time, s.is_finalized,
+               m.capacity, m.occupancy, m.net_collection, m.timestamp as last_updated, m.metric_id,
+               mov.movie_id, mov.title as movie_name
+        FROM shows s
+        JOIN movies mov ON s.movie_id = mov.movie_id
+        JOIN theaters t ON s.theater_id = t.theater_id
+        JOIN locations l ON t.city_id = l.city_id
+        JOIN (
+            SELECT show_id, MAX(metric_id) as latest_metric_id
+            FROM show_metrics
+            GROUP BY show_id
+        ) latest ON s.show_id = latest.show_id
+        JOIN show_metrics m ON latest.latest_metric_id = m.metric_id
+        WHERE mov.tollybo_movie_id = ? AND s.show_date = ?
+    '''
+    
+    cursor.execute(query, (tollybo_movie_id, date))
+    rows = cursor.fetchall()
+    
+    if not rows:
+        conn.close()
+        raise HTTPException(status_code=404, detail="No data found")
+        
+    metric_ids = [dict(r).get('metric_id') for r in rows if dict(r).get('metric_id')]
+    prices_map = {}
+    if metric_ids:
+        chunk_size = 50
+        for i in range(0, len(metric_ids), chunk_size):
+            chunk = metric_ids[i:i + chunk_size]
+            placeholders = ','.join('?' for _ in chunk)
+            cursor.execute(f"SELECT metric_id, ticket_price, capacity, occupancy FROM show_metric_prices WHERE metric_id IN ({placeholders})", chunk)
+            for p_row in cursor.fetchall():
+                p_dict = dict(p_row)
+                mid = p_dict['metric_id']
+                if mid not in prices_map:
+                    prices_map[mid] = []
+                prices_map[mid].append({
+                    "price": float(p_dict['ticket_price']) if p_dict['ticket_price'] else 0.0,
+                    "capacity": p_dict['capacity'],
+                    "occupancy": p_dict['occupancy']
+                })
+            
+    conn.close()
+    
+    first_row = dict(rows[0])
+    movie_id = first_row['movie_id']
+    movie_name = first_row['movie_name']
+    
+    result = {
+        "tollybo_movie_id": tollybo_movie_id,
+        "movie_id": movie_id,
+        "movie_name": movie_name,
+        "date": date,
+        "total_collection": 0,
+        "total_theaters_count": 0,
+        "total_show_count": 0,
+        "occupancy_percentage": 0.0,
+        "total_capacity": 0,
+        "total_occupancy": 0,
+        "regions": []
+    }
+    
+    states_dict = {}
+    for r in rows:
+        row = dict(r)
+        state = row['state_name']
+        city = row['city_name']
+        theater_id = row['theater_id']
+        theater_name = row['theater_name']
+        
+        # State Level
+        if state not in states_dict:
+            states_dict[state] = {
+                "state": state,
+                "total_collection": 0,
+                "total_theaters_count": 0,
+                "total_show_count": 0,
+                "total_capacity": 0,
+                "total_occupancy": 0,
+                "occupancy_percentage": 0.0,
+                "cities_dict": {},
+                "cities": []
+            }
+        
+        # City Level
+        if city not in states_dict[state]["cities_dict"]:
+            states_dict[state]["cities_dict"][city] = {
+                "city": city,
+                "total_collection": 0,
+                "total_theaters_count": 0,
+                "total_show_count": 0,
+                "total_capacity": 0,
+                "total_occupancy": 0,
+                "occupancy_percentage": 0.0,
+                "theaters_dict": {},
+                "theaters": []
+            }
+            
+        # Theater Level
+        if theater_id not in states_dict[state]["cities_dict"][city]["theaters_dict"]:
+            states_dict[state]["cities_dict"][city]["theaters_dict"][theater_id] = {
+                "theater_id": theater_id,
+                "theater_name": theater_name,
+                "total_collection": 0,
+                "total_show_count": 0,
+                "total_capacity": 0,
+                "total_occupancy": 0,
+                "occupancy_percentage": 0.0,
+                "shows": []
+            }
+            # Increment theater counts
+            states_dict[state]["total_theaters_count"] += 1
+            states_dict[state]["cities_dict"][city]["total_theaters_count"] += 1
+            result["total_theaters_count"] += 1
+            
+        # Show Level
+        show_time_str = row['show_time']
+        show_time_ist = show_time_str
+        if show_time_str and show_time_str != "Unknown":
+            try:
+                st = datetime.datetime.strptime(show_time_str, "%Y-%m-%dT%H:%M")
+                st_ist = st + datetime.timedelta(hours=5, minutes=30)
+                show_time_ist = st_ist.strftime("%I:%M %p")
+            except Exception:
+                pass
+                
+        show_data = {
+            "show_id": row['show_id'],
+            "screen_name": row['screen_name'],
+            "show_date": row['show_date'],
+            "show_time": row['show_time'],
+            "show_time_ist": show_time_ist,
+            "capacity": row['capacity'],
+            "occupancy": row['occupancy'],
+            "total_collection": row['net_collection'],
+            "is_finalized": bool(row['is_finalized']),
+            "last_updated": row['last_updated'],
+            "price_capacity_breakdown": prices_map.get(row['metric_id'], [])
+        }
+        
+        # Add show
+        states_dict[state]["cities_dict"][city]["theaters_dict"][theater_id]["shows"].append(show_data)
+        
+        # Aggregate totals
+        collection = row['net_collection'] or 0
+        capacity = row['capacity'] or 0
+        occupancy = row['occupancy'] or 0
+        
+        # Theater aggregation
+        states_dict[state]["cities_dict"][city]["theaters_dict"][theater_id]["total_collection"] += collection
+        states_dict[state]["cities_dict"][city]["theaters_dict"][theater_id]["total_show_count"] += 1
+        states_dict[state]["cities_dict"][city]["theaters_dict"][theater_id]["total_capacity"] += capacity
+        states_dict[state]["cities_dict"][city]["theaters_dict"][theater_id]["total_occupancy"] += occupancy
+        
+        # City aggregation
+        states_dict[state]["cities_dict"][city]["total_collection"] += collection
+        states_dict[state]["cities_dict"][city]["total_show_count"] += 1
+        states_dict[state]["cities_dict"][city]["total_capacity"] += capacity
+        states_dict[state]["cities_dict"][city]["total_occupancy"] += occupancy
+        
+        # State aggregation
+        states_dict[state]["total_collection"] += collection
+        states_dict[state]["total_show_count"] += 1
+        states_dict[state]["total_capacity"] += capacity
+        states_dict[state]["total_occupancy"] += occupancy
+        
+        # Global aggregation
+        result["total_collection"] += collection
+        result["total_show_count"] += 1
+        result["total_capacity"] += capacity
+        result["total_occupancy"] += occupancy
+        
+    # Calculate percentages and flatten dicts
+    if result["total_capacity"] > 0:
+        result["occupancy_percentage"] = round((result["total_occupancy"] * 100.0) / result["total_capacity"], 2)
+        
+    for state, s_data in states_dict.items():
+        if s_data["total_capacity"] > 0:
+            s_data["occupancy_percentage"] = round((s_data["total_occupancy"] * 100.0) / s_data["total_capacity"], 2)
+            
+        for city, c_data in s_data["cities_dict"].items():
+            if c_data["total_capacity"] > 0:
+                c_data["occupancy_percentage"] = round((c_data["total_occupancy"] * 100.0) / c_data["total_capacity"], 2)
+                
+            for t_id, t_data in c_data["theaters_dict"].items():
+                if t_data["total_capacity"] > 0:
+                    t_data["occupancy_percentage"] = round((t_data["total_occupancy"] * 100.0) / t_data["total_capacity"], 2)
+                
+                t_data.pop("total_capacity", None)
+                t_data.pop("total_occupancy", None)
+                c_data["theaters"].append(t_data)
+                
+            c_data.pop("theaters_dict", None)
+            c_data.pop("total_capacity", None)
+            c_data.pop("total_occupancy", None)
+            
+            c_data["theaters"].sort(key=lambda x: x["total_collection"], reverse=True)
+            s_data["cities"].append(c_data)
+            
+        s_data.pop("cities_dict", None)
+        s_data.pop("total_capacity", None)
+        s_data.pop("total_occupancy", None)
+        
+        s_data["cities"].sort(key=lambda x: x["total_collection"], reverse=True)
+        result["regions"].append(s_data)
+        
+    result.pop("total_capacity", None)
+    result.pop("total_occupancy", None)
+    
+    result["regions"].sort(key=lambda x: x["total_collection"], reverse=True)
+    
+    return result
+
+@app.get("/api/v1/analytics/dates-history-tollybo-movie-id")
+def get_dates_history_tollybo_movie_id(tollybo_movie_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = '''
+        SELECT DISTINCT s.show_date
+        FROM shows s
+        JOIN movies mov ON s.movie_id = mov.movie_id
+        WHERE mov.tollybo_movie_id = ?
+        ORDER BY s.show_date DESC
+    '''
+    
+    cursor.execute(query, (tollybo_movie_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    dates = [dict(r).get('show_date') for r in rows if dict(r).get('show_date')]
+    return dates
+
+class TheatersListRequest(BaseModel):
+    state_name: Optional[str] = None
+    city_id: Optional[int] = None
+    theater_id: Optional[str] = None
+
+@app.post("/api/v1/analytics/theaters-list")
+def get_theaters_list(req: TheatersListRequest):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = '''
+        SELECT t.*, l.city_name, l.state_name
+        FROM theaters t
+        JOIN locations l ON t.city_id = l.city_id
+        WHERE 1=1
+    '''
+    params = []
+    
+    if req.theater_id:
+        query += " AND t.theater_id = ?"
+        params.append(req.theater_id)
+    if req.city_id:
+        query += " AND t.city_id = ?"
+        params.append(req.city_id)
+    if req.state_name:
+        query += " AND l.state_name = ?"
+        params.append(req.state_name)
+        
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(r) for r in rows]
+
+@app.get("/api/v1/analytics/regions-list")
+def get_regions_list():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT state_name FROM locations WHERE state_name IS NOT NULL ORDER BY state_name ASC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r).get('state_name') for r in rows if dict(r).get('state_name')]
+
+@app.get("/api/v1/analytics/citis-list")
+def get_cities_list(state: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT city_id, city_name FROM locations WHERE state_name = ? ORDER BY city_name ASC", (state,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [{"city_id": dict(r).get('city_id'), "city_name": dict(r).get('city_name')} for r in rows]
+
+@app.get("/api/v1/analytics/theater")
+def get_theater_info(theater_id: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT t.*, l.city_name, l.state_name 
+        FROM theaters t 
+        JOIN locations l ON t.city_id = l.city_id 
+        WHERE t.theater_id = ?
+    ''', (theater_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Theater not found")
+        
+    return dict(row)
+
+@app.get("/api/v1/analytics/dates-history-by-theater-id")
+def get_dates_history_by_theater_id(theater_id: str = Query(..., alias="theater-id")):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = '''
+        SELECT DISTINCT s.show_date
+        FROM shows s
+        WHERE s.theater_id = ?
+        ORDER BY s.show_date DESC
+    '''
+    
+    cursor.execute(query, (theater_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    dates = [dict(r).get('show_date') for r in rows if dict(r).get('show_date')]
+    return dates
+
+@app.get("/api/v1/analytics/day-wise-breakdown-by-theater-id")
+def get_day_wise_breakdown_by_theater_id(theater_id: str = Query(..., alias="theater-id"), date: str = None):
+    return get_theater_summary(theater_id, date)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
