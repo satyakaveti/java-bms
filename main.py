@@ -516,10 +516,10 @@ def get_movie_summary(movie_id: str, date: str = None):
         SELECT l.state_name, l.city_name, 
                count(s.show_id) as no_of_shows,
                sum(m.net_collection) as sum_total_collection,
-               ROUND(sum(m.net_collection) / 10000000.0, 3) || ' CR' as sum_total_collection_in_cr,
+               ROUND(CAST(sum(m.net_collection) / 10000000.0 AS NUMERIC), 3) || ' CR' as sum_total_collection_in_cr,
                sum(m.capacity) as sum_total_seats,
                sum(m.occupancy) as sum_total_occupied,
-               ROUND(sum(CAST(m.occupancy AS FLOAT)) * 100.0 / NULLIF(sum(m.capacity), 0), 2) as occpency_avg_percentile
+               ROUND(CAST(sum(CAST(m.occupancy AS FLOAT)) * 100.0 / NULLIF(sum(m.capacity), 0) AS NUMERIC), 2) as occpency_avg_percentile
         FROM shows s
         JOIN theaters t ON s.theater_id = t.theater_id
         JOIN locations l ON t.city_id = l.city_id
@@ -571,7 +571,7 @@ def get_movie_summary(movie_id: str, date: str = None):
         
     # Calculate state-level formatted fields
     for state, data in state_summary.items():
-        data["sum_total_collection_in_cr"] = f"{round(data['sum_total_collection'] / 10000000.0, 3)} CR"
+        data["sum_total_collection_in_cr"] = f"{round(float(data['sum_total_collection'] or 0) / 10000000.0, 3)} CR"
         
         if data["sum_total_seats"] > 0:
             data["occpency_avg_percentile"] = round((data["sum_total_occupied"] * 100.0) / data["sum_total_seats"], 2)
@@ -613,8 +613,8 @@ def get_movie_theaters(movie_id: str, city_id: int, date: str = None):
     summary = {
         "total_theater_count": len(theater_list),
         "total_Show_count": sum(t.get('total_shows', 0) for t in theater_list),
-        "sum_total_collection": sum(t.get('total_collection', 0) for t in theater_list),
-        "sum_total_collection_in_cr": f"{round(sum(t.get('total_collection', 0) for t in theater_list) / 10000000.0, 3)} CR",
+        "sum_total_collection": sum(t.get('total_collection', 0) or 0 for t in theater_list),
+        "sum_total_collection_in_cr": f"{round(float(sum(t.get('total_collection', 0) or 0 for t in theater_list)) / 10000000.0, 3)} CR",
         "total_capacity": sum(t.get('total_capacity', 0) for t in theater_list),
         "total_occupancy": sum(t.get('total_occupancy', 0) for t in theater_list),
         "total_occupancy_percentile": 0.0,
@@ -1164,6 +1164,20 @@ def get_dates_history_by_theater_id(theater_id: str = Query(..., alias="theater-
 @app.get("/api/v1/analytics/day-wise-breakdown-by-theater-id")
 def get_day_wise_breakdown_by_theater_id(theater_id: str = Query(..., alias="theater-id"), date: str = None):
     return get_theater_summary(theater_id, date)
+
+@app.get("/api/v1/analytics/box-office/movies-list")
+def get_box_office_movies_list():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT *
+        FROM movies
+        WHERE tollybo_movie_id IS NOT NULL
+        ORDER BY movie_id DESC
+    ''')
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
