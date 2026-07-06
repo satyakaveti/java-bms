@@ -44,8 +44,8 @@ Environment="PATH=$APP_DIR/venv/bin"
 # Allow non-root user to bind to port 80
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
-# Run Uvicorn directly on port 80 with 1 worker to save memory
-ExecStart=$APP_DIR/venv/bin/uvicorn main:app --host 0.0.0.0 --port 80 --workers 1
+# Run Uvicorn directly on port 8282 with 1 worker to save memory
+ExecStart=$APP_DIR/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8282 --workers 1
 
 [Install]
 WantedBy=multi-user.target
