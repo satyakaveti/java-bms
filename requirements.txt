@@ -5,3 +5,4 @@ pydantic
 curl_cffi
 python-dotenv
 psycopg2-binary
+beautifulsoup4
