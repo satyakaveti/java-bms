@@ -9,6 +9,7 @@ import datetime
 import traceback
 from database import get_connection
 import db_operations
+from contextlib import asynccontextmanager
 
 try:
     from district_scraper import run_district_scraping_job, fetch_regions_district, get_movies_by_region_district, fetch_cinemas_direct
@@ -18,23 +19,8 @@ except ImportError:
     get_movies_by_region_district = None
     get_movies_by_region_district = None
 
-app = FastAPI(
-    title="District Ticketing Analyzer",
-    docs_url="/bms-district-api-docs",
-    redoc_url="/bms-district-api-redoc"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://tollybo.com"],
-    allow_origin_regex=r"https://.*\.tollybo\.com|http://localhost:\d+|http://127\.0\.0\.1:\d+",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     import database
     import asyncio
     
@@ -43,12 +29,33 @@ async def startup_event():
     
     db_mode = getattr(database, 'DB_MODE', 'LOCAL')
     if db_mode == "PROD":
-        print(f"Connected DB: Cloudflare D1 (DB_MODE: {db_mode})")
+        print(f"Connected DB: POSTGRES PROD (DB_MODE: {db_mode})")
     else:
         print(f"Connected DB: SQLite Local (DB_MODE: {db_mode})")
     
     # Start the periodic background scheduler (Disabled per user request)
     # asyncio.create_task(run_scheduler())
+    yield
+
+app = FastAPI(
+    title="District Ticketing Analyzer",
+    docs_url="/bms-district-api-docs",
+    redoc_url="/bms-district-api-redoc",
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://tollybo.com",
+        "http://129.159.225.102:8282",
+        "http://129.159.225.102"
+    ],
+    allow_origin_regex=r"https://.*\.tollybo\.com|http://localhost:\d+|http://127\.0\.0\.1:\d+|http://129\.159\.225\.102:\d+",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 async def run_scheduler():
     while True:
