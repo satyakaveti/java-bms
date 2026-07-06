@@ -318,6 +318,12 @@ class FullRunRequest(BaseModel):
     movieName: Optional[str] = None
 
 def execute_full_run_job(req: FullRunRequest):
+    import datetime
+    
+    ist_tz = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+    start_time = datetime.datetime.now(ist_tz)
+    summary_data = []
+
     try:
         from district_scraper import fetch_regions_district, run_district_scraping_job, get_movies_by_region_district
         import db_operations
@@ -362,11 +368,100 @@ def execute_full_run_job(req: FullRunRequest):
                 preloaded = target_regions_map.get(state, [])
                 run_district_scraping_job(job_id, movie_name, jobs_db, target_state=state, preloaded_regions=preloaded)
                 
+                job_info = jobs_db[job_id]
+                status = job_info.get("status", "UNKNOWN")
+                
+                shows_count = 0
+                if status == "COMPLETED" and job_info.get("data"):
+                    states_data = job_info["data"].get("states", {})
+                    for s_name, s_data in states_data.items():
+                        for c_name, theaters in s_data.get("cities", {}).items():
+                            for t in theaters:
+                                shows_count += len(t.get("shows", []))
+                                
+                summary_data.append({
+                    "region": state,
+                    "movie": movie_name,
+                    "shows": shows_count,
+                    "status": status
+                })
+                
         print("[Full Run] Completed successfully.")
+        
+        end_time = datetime.datetime.now(ist_tz)
+        _send_scraper_email("COMPLETED", start_time, end_time, summary_data)
+        
     except Exception as e:
         print(f"[Full Run] Error: {e}")
         import traceback
+        error_log = traceback.format_exc()
         traceback.print_exc()
+        
+        end_time = datetime.datetime.now(ist_tz)
+        _send_scraper_email("FAILED", start_time, end_time, summary_data, error_log)
+
+def _send_scraper_email(status, start_time, end_time, summary_data, error_log=None):
+    import urllib.request
+    import json
+    
+    url = 'https://web-api.tollybo.com/api/email/send'
+    
+    date_str = end_time.strftime("%d-%B-%Y, %I:%M%p IST").replace(" 0", " ")
+    
+    if status == "COMPLETED":
+        subject = f"{date_str} - DISTRCIT SCAPPER RUN COMPLETED ✅"
+        
+        table_html = """
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: sans-serif;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="text-align: left;">Region</th>
+                    <th style="text-align: left;">Movie</th>
+                    <th style="text-align: right;">Shows</th>
+                    <th style="text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+        """
+        if not summary_data:
+            table_html += "<tr><td colspan='4' style='text-align: center;'>No data available</td></tr>"
+        else:
+            for row in summary_data:
+                table_html += f"<tr><td>{row['region']}</td><td>{row['movie']}</td><td style='text-align: right;'>{row['shows']}</td><td style='text-align: center;'>{row['status']}</td></tr>"
+        table_html += "</tbody></table>"
+        
+        body = f"""
+        <div style="font-family: sans-serif;">
+            <h3>District Scraper Run Summary</h3>
+            <p><b>Scheduler Start Time:</b> {start_time.strftime('%Y-%m-%d %I:%M:%S %p IST')}</p>
+            <p><b>Scheduler End Time:</b> {end_time.strftime('%Y-%m-%d %I:%M:%S %p IST')}</p>
+            <br/>
+            {table_html}
+        </div>
+        """
+    else:
+        subject = f"{date_str} - DISTRCIT SCAPPER RUN - FAILED ❌"
+        body = f"""
+        <div style="font-family: sans-serif;">
+            <h3>District Scraper Run Failed</h3>
+            <p><b>Scheduler Start Time:</b> {start_time.strftime('%Y-%m-%d %I:%M:%S %p IST')}</p>
+            <p><b>Scheduler End Time:</b> {end_time.strftime('%Y-%m-%d %I:%M:%S %p IST')}</p>
+            <p><b>Error Log:</b></p>
+            <pre style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; overflow-x: auto;">{error_log}</pre>
+        </div>
+        """
+
+    payload = {
+        "to": "smlcodes@gmail.com",
+        "subject": subject,
+        "body": body
+    }
+    
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
+    try:
+        urllib.request.urlopen(req, timeout=10)
+    except Exception as e:
+        print(f"Failed to send email: {e}")
 
 @app.post("/api/v1/district/full-run", status_code=202)
 def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
