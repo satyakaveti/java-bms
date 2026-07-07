@@ -10,19 +10,53 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import db_operations
 
-WEBSHARE_PROXIES = [
-    "31.59.20.176:6754:umfreken:t1kcbpmt3lup",
-    "31.56.127.193:7684:umfreken:t1kcbpmt3lup",
-    # The other 8 proxies from the Webshare pool are explicitly blocked/timed out by Zomato's WAF
-]
+import os
+import urllib.request
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
+def load_free_proxies():
+    """Programmatically fetch free elite proxies if none are provided"""
+    try:
+        print("Fetching free proxies programmatically...")
+        url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country=all&ssl=yes&anonymity=elite"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            text = response.read().decode('utf-8')
+            proxies = text.strip().split("\r\n")
+            valid_proxies = [p for p in proxies if p][:100] # Grab top 100
+            print(f"Successfully loaded {len(valid_proxies)} free proxies.")
+            return valid_proxies
+    except Exception as e:
+        print(f"Failed to fetch free proxies: {e}")
+    return []
+
+env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
+if env_proxies:
+    PROXIES_POOL = [p.strip() for p in env_proxies.split(",") if p.strip()]
+else:
+    PROXIES_POOL = load_free_proxies()
 
 def print_curl_request(method, url, headers=None, json_data=None):
     print(f"{method} - {url}")
 
 def get_random_proxy():
-    proxy_str = random.choice(WEBSHARE_PROXIES)
-    ip, port, user, pwd = proxy_str.split(":")
-    proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+    if not PROXIES_POOL:
+        return None
+    proxy_str = random.choice(PROXIES_POOL)
+    
+    parts = proxy_str.split(":")
+    if len(parts) == 4:
+        # Authenticated Proxy (ip:port:user:pass)
+        ip, port, user, pwd = parts
+        proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+    elif len(parts) == 2:
+        # Free Proxy (ip:port)
+        ip, port = parts
+        proxy_url = f"http://{ip}:{port}"
+    else:
+        return None
+        
     return {"http": proxy_url, "https": proxy_url}
 
 HEADERS_DISTRICT = {
