@@ -787,10 +787,16 @@ def get_movie_shows(movie_id: str, theater_id: str, date: str = None):
         show_time_str = d.get('show_time')
         if show_time_str and show_time_str != "Unknown":
             try:
-                # District provides show_time in UTC
-                st = datetime.datetime.strptime(show_time_str, "%Y-%m-%dT%H:%M")
+                if isinstance(show_time_str, datetime.datetime):
+                    st = show_time_str
+                else:
+                    time_str = str(show_time_str).replace(' ', 'T')
+                    if len(time_str) == 16:
+                        st = datetime.datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+                    else:
+                        st = datetime.datetime.strptime(time_str[:19], "%Y-%m-%dT%H:%M:%S")
                 st_ist = st + datetime.timedelta(hours=5, minutes=30)
-                d['show_time_ist'] = st_ist.strftime("%I:%M %p")
+                d['show_time_ist'] = st_ist.strftime("%Y-%m-%dT%H:%M:%S")
             except Exception:
                 d['show_time_ist'] = show_time_str
         else:
@@ -865,10 +871,16 @@ def get_theater_summary(theater_id: str, date: str = None):
         show_time_str = d.get('show_time')
         if show_time_str and show_time_str != "Unknown":
             try:
-                # District provides show_time in UTC
-                st = datetime.datetime.strptime(show_time_str, "%Y-%m-%dT%H:%M")
+                if isinstance(show_time_str, datetime.datetime):
+                    st = show_time_str
+                else:
+                    time_str = str(show_time_str).replace(' ', 'T')
+                    if len(time_str) == 16:
+                        st = datetime.datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+                    else:
+                        st = datetime.datetime.strptime(time_str[:19], "%Y-%m-%dT%H:%M:%S")
                 st_ist = st + datetime.timedelta(hours=5, minutes=30)
-                d['show_time_ist'] = st_ist.strftime("%I:%M %p")
+                d['show_time_ist'] = st_ist.strftime("%Y-%m-%dT%H:%M:%S")
             except Exception:
                 d['show_time_ist'] = show_time_str
         else:
@@ -1061,9 +1073,16 @@ def get_day_wise_breakdown_by_tollybo_movie_id(tollybo_movie_id: int, date: str)
         show_time_ist = show_time_str
         if show_time_str and show_time_str != "Unknown":
             try:
-                st = datetime.datetime.strptime(show_time_str, "%Y-%m-%dT%H:%M")
+                if isinstance(show_time_str, datetime.datetime):
+                    st = show_time_str
+                else:
+                    time_str = str(show_time_str).replace(' ', 'T')
+                    if len(time_str) == 16:
+                        st = datetime.datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+                    else:
+                        st = datetime.datetime.strptime(time_str[:19], "%Y-%m-%dT%H:%M:%S")
                 st_ist = st + datetime.timedelta(hours=5, minutes=30)
-                show_time_ist = st_ist.strftime("%I:%M %p")
+                show_time_ist = st_ist.strftime("%Y-%m-%dT%H:%M:%S")
             except Exception:
                 pass
                 
