@@ -82,11 +82,10 @@ HEADERS_DISTRICT = {
     'x-is-movies-supported': 'true'
 }
 
-def post_with_retry(url, headers, json_data, retries=5):
-    print(f"    -> [POST] Calling API: {url}")
-    print_curl_request("POST", url, headers, json_data)
+def post_with_retry(url, headers, json_data, retries=10):
     for i in range(retries):
         proxy = get_random_proxy()
+        print(f"    -> [POST] Calling API (Attempt {i+1}/{retries}): {url} via {proxy}")
         try:
             res = requests.post(
                 url, 
@@ -94,7 +93,7 @@ def post_with_retry(url, headers, json_data, retries=5):
                 json=json_data,
                 impersonate="chrome124", 
                 proxies=proxy,
-                timeout=8
+                timeout=15
             )
             if res.status_code in [404, 400]:
                 return res
@@ -105,18 +104,17 @@ def post_with_retry(url, headers, json_data, retries=5):
                 raise e
             time.sleep(random.uniform(0.5, 1.5))
 
-def get_with_retry(url, headers, retries=5):
-    print(f"    -> [GET] Calling API: {url}")
-    print_curl_request("GET", url, headers)
+def get_with_retry(url, headers, retries=10):
     for i in range(retries):
         proxy = get_random_proxy()
+        print(f"    -> [GET] Calling API (Attempt {i+1}/{retries}): {url} via {proxy}")
         try:
             res = requests.get(
                 url, 
                 headers=headers, 
                 impersonate="chrome124", 
                 proxies=proxy,
-                timeout=8,
+                timeout=15,
                 allow_redirects=True
             )
             if res.status_code in [404, 400]:
