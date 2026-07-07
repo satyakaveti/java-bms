@@ -7,6 +7,42 @@ from typing import Dict, Any, Optional, List
 import asyncio
 import datetime
 import traceback
+import sys
+import logging
+from logging.handlers import TimedRotatingFileHandler
+
+# --- Setup Rotating File Logger (48 Hours Retention) ---
+log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+# Rotate every 24 hours (1 Day), keep 2 backups (48 hours total)
+log_handler = TimedRotatingFileHandler('app.log', when='D', interval=1, backupCount=2)
+log_handler.setFormatter(log_formatter)
+
+logger = logging.getLogger('app_logger')
+logger.setLevel(logging.INFO)
+logger.addHandler(log_handler)
+
+# Also keep printing to console so the terminal output still works
+console_handler = logging.StreamHandler(sys.__stdout__)
+console_handler.setFormatter(log_formatter)
+logger.addHandler(console_handler)
+
+class StreamToLogger(object):
+    def __init__(self, logger, log_level=logging.INFO):
+        self.logger = logger
+        self.log_level = log_level
+
+    def write(self, buf):
+        for line in buf.rstrip().splitlines():
+            self.logger.log(self.log_level, line.rstrip())
+            
+    def flush(self):
+        pass
+
+# Redirect all print() and traceback statements to the logger
+sys.stdout = StreamToLogger(logger, logging.INFO)
+sys.stderr = StreamToLogger(logger, logging.ERROR)
+# --------------------------------------------------------
+
 from database import get_connection
 import db_operations
 from contextlib import asynccontextmanager
