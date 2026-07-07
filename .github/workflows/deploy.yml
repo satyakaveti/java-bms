@@ -3,7 +3,7 @@ name: Deploy to Oracle VM
 on:
   push:
     branches:
-      - release
+      - main
 
 jobs:
   deploy:
@@ -25,9 +25,9 @@ jobs:
             # Fetch the latest from all branches
             git fetch origin
             
-            # Switch to the release branch and pull the latest changes
-            git checkout -B release origin/release
-            git pull origin release
+            # Switch to the main branch and pull the latest changes
+            git checkout main
+            git pull origin main
             
             # Activate the virtual environment and install dependencies
             source venv/bin/activate
