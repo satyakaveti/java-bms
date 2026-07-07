@@ -129,6 +129,27 @@ def upsert_show_and_record_metric(show_id, theater_id, movie_id, screen_name, sh
         show_date = excluded.show_date
     ''', (show_id, theater_id, movie_id, screen_name, show_time, show_date))
     
+    # Fetch the latest metric for this show to see if it changed
+    cursor.execute('''
+    SELECT capacity, occupancy, net_collection 
+    FROM show_metrics 
+    WHERE show_id = %s 
+    ORDER BY metric_id DESC LIMIT 1
+    ''', (show_id,))
+    latest = cursor.fetchone()
+    
+    if latest:
+        old_cap = latest['capacity']
+        old_occ = latest['occupancy']
+        old_net = float(latest['net_collection']) if latest['net_collection'] is not None else 0.0
+        new_net = float(net_collection) if net_collection is not None else 0.0
+        
+        # If nothing changed, we skip inserting a duplicate record
+        if old_cap == capacity and old_occ == occupancy and abs(old_net - new_net) < 0.01:
+            conn.commit()
+            conn.close()
+            return
+
     now_utc = datetime.datetime.utcnow().isoformat()
     cursor.execute('''
     INSERT INTO show_metrics (show_id, timestamp, capacity, occupancy, net_collection)
