@@ -15,40 +15,84 @@ import urllib.request
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-def load_free_proxies():
-    """Programmatically fetch free elite proxies if none are provided"""
-    try:
-        print("Fetching free proxies programmatically...")
-        url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country=all&ssl=yes&anonymity=elite"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        import ssl
+import threading
+import ssl
+
+class ProxyManager:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.proxies = set()
+        self.bad_proxies = set()
+        self.sources = [
+            "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country=all&ssl=yes&anonymity=elite",
+            "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+            "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+            "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt"
+        ]
+        
+        env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
+        if env_proxies:
+            self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()]
+            self.proxies.update(self.static_proxies)
+            self.is_static = True
+            print(f"Loaded {len(self.static_proxies)} static proxies from WEBSHARE_PROXIES env.")
+        else:
+            self.static_proxies = []
+            self.is_static = False
+            self.load_more_proxies()
+
+    def load_more_proxies(self):
+        if self.is_static:
+            return
+        print("Fetching free proxies programmatically from multiple sources...")
+        new_proxies = set()
+        
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
         
-        with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
-            text = response.read().decode('utf-8')
-            proxies = text.strip().split("\r\n")
-            valid_proxies = [p for p in proxies if p][:100] # Grab top 100
-            print(f"Successfully loaded {len(valid_proxies)} free proxies.")
-            return valid_proxies
-    except Exception as e:
-        print(f"Failed to fetch free proxies: {e}")
-    return []
+        for url in self.sources:
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
+                    text = response.read().decode('utf-8', errors='ignore')
+                    found = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{2,5}\b', text)
+                    for p in found:
+                        if p not in self.bad_proxies:
+                            new_proxies.add(p)
+            except Exception as e:
+                print(f"Failed to fetch proxies from {url}: {e}")
+                
+        self.proxies.update(new_proxies)
+        print(f"Successfully loaded {len(self.proxies)} unique free proxies (Total bad proxies tracked: {len(self.bad_proxies)}).")
 
-env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
-if env_proxies:
-    PROXIES_POOL = [p.strip() for p in env_proxies.split(",") if p.strip()]
-else:
-    PROXIES_POOL = load_free_proxies()
+    def get_proxy(self):
+        with self.lock:
+            if not self.is_static and len(self.proxies) < 15:
+                self.load_more_proxies()
+            if not self.proxies:
+                return None
+            return random.choice(list(self.proxies))
+
+    def report_failure(self, proxy_str):
+        with self.lock:
+            if proxy_str in self.proxies:
+                self.proxies.remove(proxy_str)
+            self.bad_proxies.add(proxy_str)
+            if self.is_static:
+                print(f"Static proxy {proxy_str} failed. Remaining: {len(self.proxies)}")
+            else:
+                print(f"Free proxy {proxy_str} marked as dead. Remaining active proxies: {len(self.proxies)}")
+
+proxy_manager = ProxyManager()
 
 def print_curl_request(method, url, headers=None, json_data=None):
     print(f"{method} - {url}")
 
 def get_random_proxy():
-    if not PROXIES_POOL:
-        return None
-    proxy_str = random.choice(PROXIES_POOL)
+    proxy_str = proxy_manager.get_proxy()
+    if not proxy_str:
+        return None, None
     
     parts = proxy_str.split(":")
     if len(parts) == 4:
@@ -60,9 +104,9 @@ def get_random_proxy():
         ip, port = parts
         proxy_url = f"http://{ip}:{port}"
     else:
-        return None
+        return None, None
         
-    return {"http": proxy_url, "https": proxy_url}
+    return proxy_str, {"http": proxy_url, "https": proxy_url}
 
 HEADERS_DISTRICT = {
     'accept': '*/*',
@@ -84,7 +128,7 @@ HEADERS_DISTRICT = {
 
 def post_with_retry(url, headers, json_data, retries=10):
     for i in range(retries):
-        proxy = get_random_proxy()
+        proxy_str, proxy = get_random_proxy()
         print(f"    -> [POST] Calling API (Attempt {i+1}/{retries}): {url} via {proxy}")
         try:
             res = requests.post(
@@ -100,13 +144,15 @@ def post_with_retry(url, headers, json_data, retries=10):
             res.raise_for_status()
             return res
         except Exception as e:
+            if proxy_str:
+                proxy_manager.report_failure(proxy_str)
             if i == retries - 1:
                 raise e
             time.sleep(random.uniform(0.5, 1.5))
 
 def get_with_retry(url, headers, retries=10):
     for i in range(retries):
-        proxy = get_random_proxy()
+        proxy_str, proxy = get_random_proxy()
         print(f"    -> [GET] Calling API (Attempt {i+1}/{retries}): {url} via {proxy}")
         try:
             res = requests.get(
@@ -122,6 +168,8 @@ def get_with_retry(url, headers, retries=10):
             res.raise_for_status()
             return res
         except Exception as e:
+            if proxy_str:
+                proxy_manager.report_failure(proxy_str)
             if i == retries - 1:
                 raise e
             time.sleep(random.uniform(0.5, 1.5))
