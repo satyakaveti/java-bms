@@ -7,6 +7,45 @@ from typing import Dict, Any, Optional, List
 import asyncio
 import datetime
 import traceback
+import sys
+import logging
+from logging.handlers import TimedRotatingFileHandler
+
+# --- Setup Rotating File Logger (48 Hours Retention) ---
+log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+# Rotate every 24 hours (1 Day), keep 2 backups (48 hours total)
+log_handler = TimedRotatingFileHandler('app.log', when='D', interval=1, backupCount=2)
+log_handler.setFormatter(log_formatter)
+
+logger = logging.getLogger('app_logger')
+logger.setLevel(logging.INFO)
+logger.addHandler(log_handler)
+
+# Also keep printing to console so the terminal output still works
+console_handler = logging.StreamHandler(sys.__stdout__)
+console_handler.setFormatter(log_formatter)
+logger.addHandler(console_handler)
+
+class StreamToLogger(object):
+    def __init__(self, logger, log_level=logging.INFO):
+        self.logger = logger
+        self.log_level = log_level
+
+    def write(self, buf):
+        for line in buf.rstrip().splitlines():
+            self.logger.log(self.log_level, line.rstrip())
+            
+    def flush(self):
+        pass
+        
+    def isatty(self):
+        return False
+
+# Redirect all print() and traceback statements to the logger
+sys.stdout = StreamToLogger(logger, logging.INFO)
+sys.stderr = StreamToLogger(logger, logging.ERROR)
+# --------------------------------------------------------
+
 from database import get_connection
 import db_operations
 from contextlib import asynccontextmanager
@@ -328,6 +367,8 @@ def execute_full_run_job(req: FullRunRequest):
         from district_scraper import fetch_regions_district, run_district_scraping_job, get_movies_by_region_district
         import db_operations
         
+        _send_scraper_email("STARTED", start_time, start_time, [])
+        
         print(f"[Full Run] Initializing and syncing locations from district...")
         all_regions = fetch_regions_district()
         
@@ -408,7 +449,16 @@ def _send_scraper_email(status, start_time, end_time, summary_data, error_log=No
     
     date_str = end_time.strftime("%d-%B-%Y, %I:%M%p IST").replace(" 0", " ")
     
-    if status == "COMPLETED":
+    if status == "STARTED":
+        subject = f"{date_str} - DISTRICT SCRAPER RUN STARTED 🚀"
+        body = f"""
+        <div style="font-family: sans-serif;">
+            <h3>District Scraper Run Started</h3>
+            <p><b>Scheduler Start Time:</b> {start_time.strftime('%Y-%m-%d %I:%M:%S %p IST')}</p>
+            <p>The job has begun fetching regions and scraping showtimes. You will receive another email when it completes or fails.</p>
+        </div>
+        """
+    elif status == "COMPLETED":
         subject = f"{date_str} - DISTRCIT SCAPPER RUN COMPLETED ✅"
         
         table_html = """
@@ -454,14 +504,37 @@ def _send_scraper_email(status, start_time, end_time, summary_data, error_log=No
     payload = {
         "to": "smlcodes@gmail.com",
         "subject": subject,
-        "body": body
+        "body": body,
+        "isHtml": True
     }
     
-    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
+    headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    json_data = json.dumps(payload)
+    
+    curl_cmd = f"curl -X POST '{url}' -H 'Content-Type: application/json' -H 'User-Agent: {headers['User-Agent']}' -d '{json_data}'"
+    print(f"\n[Email] Executing Request:\n{curl_cmd}\n")
+    
+    req = urllib.request.Request(url, data=json_data.encode('utf-8'), headers=headers)
+    
+    stage = "Start" if status == "STARTED" else "END"
     try:
-        urllib.request.urlopen(req, timeout=10)
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        urllib.request.urlopen(req, timeout=10, context=ctx)
+        
+        print("\n======================")
+        print(f"Schedular {stage} - Mail Status: SUCCESS")
+        print("=====================\n")
     except Exception as e:
         print(f"Failed to send email: {e}")
+        print("\n======================")
+        print(f"Schedular {stage} - Mail Status: FAILED")
+        print("=====================\n")
 
 @app.post("/api/v1/district/full-run", status_code=202)
 def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):
