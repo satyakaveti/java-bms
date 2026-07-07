@@ -37,6 +37,9 @@ class StreamToLogger(object):
             
     def flush(self):
         pass
+        
+    def isatty(self):
+        return False
 
 # Redirect all print() and traceback statements to the logger
 sys.stdout = StreamToLogger(logger, logging.INFO)
