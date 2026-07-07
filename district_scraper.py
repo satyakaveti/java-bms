@@ -23,7 +23,7 @@ class ProxyManager:
         self.lock = threading.Lock()
         self.raw_proxies = set()
         self.working_proxies = []
-        self.bad_proxies = set()
+        self.bad_proxies = {}  # proxy_str -> timestamp of failure
         self.sources = [
             "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country=all&ssl=yes&anonymity=elite",
             "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
@@ -35,19 +35,71 @@ class ProxyManager:
         env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
         if env_proxies:
             self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()]
-            self.working_proxies = list(self.static_proxies)
             self.is_static = True
-            print(f"Loaded {len(self.static_proxies)} static proxies from WEBSHARE_PROXIES env.")
+            print(f"Loaded {len(self.static_proxies)} static proxies from WEBSHARE_PROXIES env. Validating on startup...")
+            self.validate_static_proxies_startup()
+            # Start background validator daemon thread to keep monitoring static proxies
+            threading.Thread(target=self._background_static_validator, daemon=True).start()
         else:
             self.static_proxies = []
             self.is_static = False
+            self.validate_free_proxies_startup()
             # Start background validator daemon thread
             threading.Thread(target=self._background_loader_and_validator, daemon=True).start()
 
-    def _background_loader_and_validator(self):
-        # Initial raw proxies load
+    def validate_static_proxies_startup(self):
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=min(20, len(self.static_proxies) or 1)) as executor:
+            executor.map(self.validate_one_proxy, self.static_proxies)
+        print(f"Static proxies startup validation finished. Working: {len(self.working_proxies)} / {len(self.static_proxies)}")
+
+    def validate_free_proxies_startup(self):
+        print("Performing initial free proxy fetch & validation...")
         self.load_more_raw_proxies()
         
+        from concurrent.futures import ThreadPoolExecutor
+        max_to_check = 150
+        checked_count = 0
+        
+        while len(self.working_proxies) < 10 and checked_count < max_to_check:
+            with self.lock:
+                batch = list(self.raw_proxies)[:50]
+                for p in batch:
+                    self.raw_proxies.discard(p)
+            
+            if not batch:
+                self.load_more_raw_proxies()
+                with self.lock:
+                    batch = list(self.raw_proxies)[:50]
+                    for p in batch:
+                        self.raw_proxies.discard(p)
+                if not batch:
+                    break
+            
+            print(f"Validating startup batch of {len(batch)} free proxies... (Checked: {checked_count}, Working: {len(self.working_proxies)})")
+            with ThreadPoolExecutor(max_workers=25) as executor:
+                executor.map(self.validate_one_proxy, batch)
+                
+            checked_count += len(batch)
+        
+        print(f"Free proxies startup validation finished. Working: {len(self.working_proxies)}")
+
+    def _background_static_validator(self):
+        while True:
+            try:
+                time.sleep(30)
+                with self.lock:
+                    bad_list = list(self.bad_proxies.keys())
+                
+                if bad_list:
+                    print(f"Background static proxy validator rechecking {len(bad_list)} failed proxies...")
+                    from concurrent.futures import ThreadPoolExecutor
+                    with ThreadPoolExecutor(max_workers=min(20, len(bad_list))) as executor:
+                        executor.map(self.validate_one_proxy, bad_list)
+            except Exception as e:
+                print(f"Error in background static proxy validator loop: {e}")
+
+    def _background_loader_and_validator(self):
         while True:
             try:
                 with self.lock:
@@ -68,17 +120,32 @@ class ProxyManager:
                         from concurrent.futures import ThreadPoolExecutor
                         with ThreadPoolExecutor(max_workers=20) as executor:
                             executor.map(self.validate_one_proxy, batch)
+                
+                # Periodically recheck a few bad proxies to see if they recovered (older than 5 minutes)
+                now = time.time()
+                with self.lock:
+                    bad_to_retry = [p for p, fail_time in self.bad_proxies.items() if now - fail_time > 300][:30]
+                
+                if bad_to_retry:
+                    print(f"Background free proxy validator retrying {len(bad_to_retry)} previously failed proxies...")
+                    from concurrent.futures import ThreadPoolExecutor
+                    with ThreadPoolExecutor(max_workers=10) as executor:
+                        executor.map(self.validate_one_proxy, bad_to_retry)
             except Exception as e:
                 print(f"Error in background proxy validator loop: {e}")
             
-            time.sleep(5)
+            time.sleep(10)
 
     def validate_one_proxy(self, proxy_str):
         parts = proxy_str.split(":")
-        if len(parts) != 2:
+        if len(parts) == 4:
+            ip, port, user, pwd = parts
+            proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+        elif len(parts) == 2:
+            ip, port = parts
+            proxy_url = f"http://{ip}:{port}"
+        else:
             return
-        ip, port = parts
-        proxy_url = f"http://{ip}:{port}"
         proxies = {"http": proxy_url, "https": proxy_url}
         
         try:
@@ -90,15 +157,20 @@ class ProxyManager:
             )
             if res.status_code == 200:
                 with self.lock:
-                    if proxy_str not in self.bad_proxies and proxy_str not in self.working_proxies:
+                    self.bad_proxies.pop(proxy_str, None)
+                    if proxy_str not in self.working_proxies:
                         self.working_proxies.append(proxy_str)
                         print(f"Verified working proxy: {proxy_str}. Total working: {len(self.working_proxies)}")
             else:
                 with self.lock:
-                    self.bad_proxies.add(proxy_str)
+                    self.bad_proxies[proxy_str] = time.time()
+                    if proxy_str in self.working_proxies:
+                        self.working_proxies.remove(proxy_str)
         except Exception:
             with self.lock:
-                self.bad_proxies.add(proxy_str)
+                self.bad_proxies[proxy_str] = time.time()
+                if proxy_str in self.working_proxies:
+                    self.working_proxies.remove(proxy_str)
 
     def load_more_raw_proxies(self):
         print("Fetching free proxies programmatically from multiple sources...")
@@ -127,15 +199,24 @@ class ProxyManager:
             print(f"Loaded {len(new_proxies)} raw proxies. Total raw pool: {len(self.raw_proxies)}")
 
     def get_proxy(self):
+        for _ in range(3):
+            with self.lock:
+                if self.working_proxies:
+                    break
+            print("No working proxies available in pool. Waiting 2 seconds for validator...")
+            time.sleep(2)
+
         with self.lock:
             if self.is_static:
                 if not self.working_proxies:
-                    return None
+                    print("Warning: All static proxies failed validation. Falling back to return a random static proxy.")
+                    return random.choice(self.static_proxies) if self.static_proxies else None
                 return random.choice(self.working_proxies)
             
             if self.working_proxies:
                 return random.choice(self.working_proxies)
             if self.raw_proxies:
+                print("Warning: No working free proxies. Falling back to a random raw proxy.")
                 return random.choice(list(self.raw_proxies))
             return None
 
@@ -145,7 +226,7 @@ class ProxyManager:
                 self.working_proxies.remove(proxy_str)
             if proxy_str in self.raw_proxies:
                 self.raw_proxies.discard(proxy_str)
-            self.bad_proxies.add(proxy_str)
+            self.bad_proxies[proxy_str] = time.time()
             print(f"Proxy {proxy_str} marked as dead. Working: {len(self.working_proxies)}, Raw: {len(self.raw_proxies)}")
 
 proxy_manager = ProxyManager()
