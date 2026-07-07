@@ -328,6 +328,8 @@ def execute_full_run_job(req: FullRunRequest):
         from district_scraper import fetch_regions_district, run_district_scraping_job, get_movies_by_region_district
         import db_operations
         
+        _send_scraper_email("STARTED", start_time, start_time, [])
+        
         print(f"[Full Run] Initializing and syncing locations from district...")
         all_regions = fetch_regions_district()
         
@@ -408,7 +410,16 @@ def _send_scraper_email(status, start_time, end_time, summary_data, error_log=No
     
     date_str = end_time.strftime("%d-%B-%Y, %I:%M%p IST").replace(" 0", " ")
     
-    if status == "COMPLETED":
+    if status == "STARTED":
+        subject = f"{date_str} - DISTRICT SCRAPER RUN STARTED 🚀"
+        body = f"""
+        <div style="font-family: sans-serif;">
+            <h3>District Scraper Run Started</h3>
+            <p><b>Scheduler Start Time:</b> {start_time.strftime('%Y-%m-%d %I:%M:%S %p IST')}</p>
+            <p>The job has begun fetching regions and scraping showtimes. You will receive another email when it completes or fails.</p>
+        </div>
+        """
+    elif status == "COMPLETED":
         subject = f"{date_str} - DISTRCIT SCAPPER RUN COMPLETED ✅"
         
         table_html = """
