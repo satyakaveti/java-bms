@@ -11,7 +11,23 @@ APP_DIR=${APP_DIR:-"/home/ubuntu/java-bms"}
 
 echo "1. Updating system and installing dependencies..."
 sudo apt update
-sudo apt install -y python3 python3-pip python3-venv git
+sudo apt install -y python3 python3-pip python3-venv git tor
+
+echo "1.1 Configuring Tor ControlPort..."
+if [ -f /etc/tor/torrc ]; then
+    # Ensure ControlPort 9051 is enabled and CookieAuthentication is 0
+    if ! sudo grep -q "^ControlPort 9051" /etc/tor/torrc; then
+        echo "ControlPort 9051" | sudo tee -a /etc/tor/torrc
+    fi
+    if ! sudo grep -q "^CookieAuthentication 0" /etc/tor/torrc; then
+        echo "CookieAuthentication 0" | sudo tee -a /etc/tor/torrc
+    fi
+    echo "Restarting Tor service..."
+    sudo systemctl restart tor
+    sudo systemctl enable tor
+else
+    echo "Warning: /etc/tor/torrc not found, Tor configuration skipped."
+fi
 
 echo "2. Setting up application directory..."
 if [ ! -d "$APP_DIR" ]; then
