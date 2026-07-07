@@ -19,7 +19,9 @@ if [ ! -d "$APP_DIR" ]; then
 else
     echo "Directory exists, pulling latest changes..."
     cd $APP_DIR
-    git pull origin main
+    git fetch origin
+    git checkout main
+    git reset --hard origin/main
 fi
 
 cd $APP_DIR

@@ -25,9 +25,9 @@ jobs:
             # Fetch the latest from all branches
             git fetch origin
             
-            # Switch to the main branch and pull the latest changes
+            # Switch to the main branch and force overwrite local changes
             git checkout main
-            git pull origin main
+            git reset --hard origin/main
             
             # Activate the virtual environment and install dependencies
             source venv/bin/activate
