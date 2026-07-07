@@ -93,7 +93,7 @@ def post_with_retry(url, headers, json_data, retries=10):
                 json=json_data,
                 impersonate="chrome124", 
                 proxies=proxy,
-                timeout=15
+                timeout=30
             )
             if res.status_code in [404, 400]:
                 return res
@@ -114,7 +114,7 @@ def get_with_retry(url, headers, retries=10):
                 headers=headers, 
                 impersonate="chrome124", 
                 proxies=proxy,
-                timeout=15,
+                timeout=30,
                 allow_redirects=True
             )
             if res.status_code in [404, 400]:
