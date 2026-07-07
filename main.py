@@ -394,20 +394,32 @@ def execute_full_run_job(req: FullRunRequest):
         
         for m in movies:
             movie_name = m.get("title")
+            movie_id = m.get("eventCode")
             if not movie_name: continue
             
             # If a specific movieName is requested, skip all others
             if req.movieName and req.movieName.lower().replace(" ", "") not in movie_name.lower().replace(" ", ""):
                 continue
             
+            import re
+            movie_slug = re.sub(r'[^a-z0-9]+', '-', movie_name.lower()).strip('-')
+            
             print(f"\n[Full Run] Processing movie: {movie_name}")
             for state in req.regions:
                 job_id = str(uuid.uuid4())
-                print(f"[Full Run] Starting scraping job {job_id} for '{movie_name}' in state '{state}'")
+                print(f"[Full Run] Starting scraping job {job_id} for '{movie_name}' (ID: {movie_id}) in state '{state}'")
                 jobs_db[job_id] = {"status": "PROCESSING", "data": None, "error": None}
                 
                 preloaded = target_regions_map.get(state, [])
-                run_district_scraping_job(job_id, movie_name, jobs_db, target_state=state, preloaded_regions=preloaded)
+                run_district_scraping_job(
+                    job_id, 
+                    movie_name, 
+                    jobs_db, 
+                    target_state=state, 
+                    preloaded_regions=preloaded,
+                    target_movie_id=movie_id,
+                    target_movie_slug=movie_slug
+                )
                 
                 job_info = jobs_db[job_id]
                 status = job_info.get("status", "UNKNOWN")

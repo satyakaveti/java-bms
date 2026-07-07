@@ -114,7 +114,10 @@ HEADERS_DISTRICT = {
 def post_with_retry(url, headers, json_data, retries=15):
     for i in range(retries):
         proxy_str, proxy = get_random_proxy()
-        print(f"    -> [POST] Calling API (Attempt {i+1}/{retries}): {url} via {proxy}")
+        if i == 0:
+            print(f"    -> [POST] Calling API: {url} via {proxy}")
+        else:
+            print(f"    -> [POST] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
         try:
             res = requests.post(
                 url, 
@@ -138,7 +141,10 @@ def post_with_retry(url, headers, json_data, retries=15):
 def get_with_retry(url, headers, retries=15):
     for i in range(retries):
         proxy_str, proxy = get_random_proxy()
-        print(f"    -> [GET] Calling API (Attempt {i+1}/{retries}): {url} via {proxy}")
+        if i == 0:
+            print(f"    -> [GET] Calling API: {url} via {proxy}")
+        else:
+            print(f"    -> [GET] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
         try:
             res = requests.get(
                 url, 
@@ -414,7 +420,7 @@ def fetch_showtimes_district(entity_id, movie_slug, city_key):
         
     return theaters
 
-def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, target_city=None, preloaded_regions=None):
+def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, target_city=None, preloaded_regions=None, target_movie_id=None, target_movie_slug=None):
     try:
         final_data = {
             "movie": target_movie,
@@ -445,39 +451,48 @@ def run_district_scraping_job(job_id, target_movie, jobs_db, target_state=None, 
                     db_operations.upsert_location(int(c_id), c_name, s_name)
             print(f"[{job_id}] Finished syncing locations.")
         
-        target_entity_id = None
-        target_movie_slug = "movie"
+        target_entity_id = target_movie_id
+        target_movie_slug = target_movie_slug if target_movie_slug else "movie"
         
-        # Priority sort: put major cities first so we discover the entity_id instantly
-        major_cities = ["hyderabad", "bengaluru", "mumbai", "delhi", "chennai", "kolkata", "pune", "ahmedabad", "vijayawada", "visakhapatnam", "kochi", "chandigarh"]
-        regions.sort(key=lambda x: 0 if x.get("city_key", "").lower() in major_cities else 1)
-        
-        print(f"[{job_id}] Attempting to resolve movie ID...")
-        for region in regions:
-            if target_entity_id: break
+        if not target_entity_id:
+            # Priority sort: put major cities first so we discover the entity_id instantly
+            major_cities = ["hyderabad", "bengaluru", "mumbai", "delhi", "chennai", "kolkata", "pune", "ahmedabad", "vijayawada", "visakhapatnam", "kochi", "chandigarh"]
+            regions.sort(key=lambda x: 0 if x.get("city_key", "").lower() in major_cities else 1)
             
-            city_lat = region.get("city_lat")
-            city_long = region.get("city_long")
-            if city_lat is None or city_long is None:
-                continue
+            print(f"[{job_id}] Attempting to resolve movie ID...")
+            resolved_attempts = 0
+            for region in regions:
+                if target_entity_id: break
+                if resolved_attempts >= 5:
+                    print(f"[{job_id}] Checked 5 major regions to resolve ID, stopping further searches to avoid rate limits.")
+                    break
                 
-            city_id = region.get("city_id")
-            city_name = region.get("city_name")
-            try:
-                movies = fetch_movies_by_city_district(int(city_id), city_lat, city_long)
-                for m in movies:
-                    if target_movie.lower().replace(" ", "") in m.get("name", "").lower().replace(" ", ""):
-                        target_entity_id = m.get("movie_id")
-                        target_movie_slug = re.sub(r'[^a-z0-9]+', '-', m.get("name", "").lower()).strip('-')
-                        print(f"[{job_id}] Resolved movie '{target_movie}' to ID {target_entity_id} (slug: {target_movie_slug}) in {city_name}.")
-                        # Save the location and movie to DB
-                        db_operations.upsert_location(city_id, city_name, region.get("state_name", "Unknown State"))
-                        db_operations.upsert_movie(str(target_entity_id), target_movie, "Unknown")
-                        break
-            except Exception as e:
-                print(f"[{job_id}] Error resolving movie {target_movie} in {city_name}: {e}")
-                import traceback
-                traceback.print_exc()
+                city_lat = region.get("city_lat")
+                city_long = region.get("city_long")
+                if city_lat is None or city_long is None:
+                    continue
+                    
+                city_id = region.get("city_id")
+                city_name = region.get("city_name")
+                resolved_attempts += 1
+                try:
+                    movies = fetch_movies_by_city_district(int(city_id), city_lat, city_long)
+                    for m in movies:
+                        if target_movie.lower().replace(" ", "") in m.get("name", "").lower().replace(" ", ""):
+                            target_entity_id = m.get("movie_id")
+                            target_movie_slug = re.sub(r'[^a-z0-9]+', '-', m.get("name", "").lower()).strip('-')
+                            print(f"[{job_id}] Resolved movie '{target_movie}' to ID {target_entity_id} (slug: {target_movie_slug}) in {city_name}.")
+                            # Save the location and movie to DB
+                            db_operations.upsert_location(city_id, city_name, region.get("state_name", "Unknown State"))
+                            db_operations.upsert_movie(str(target_entity_id), target_movie, "Unknown")
+                            break
+                except Exception as e:
+                    print(f"[{job_id}] Error resolving movie {target_movie} in {city_name}: {e}")
+                    import traceback
+                    traceback.print_exc()
+        else:
+            print(f"[{job_id}] Using pre-resolved movie ID {target_entity_id} (slug: {target_movie_slug}).")
+
         if not target_entity_id:
             jobs_db[job_id]["status"] = "FAILED"
             jobs_db[job_id]["error"] = "Movie could not be found in any major Zomato/District region."
