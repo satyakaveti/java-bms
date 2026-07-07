@@ -182,14 +182,42 @@ Used to poll for the completed data.
 
 ## 7. Anti-Bot & Proxy Rotation
 
-To bypass BookMyShow's aggressive Cloudflare protections and IP bans (e.g., `403 Forbidden` and `429 Too Many Requests`), this scraper implements:
-1. **TLS Fingerprint Impersonation:** Uses `curl_cffi` to perfectly mimic the TLS fingerprint of Chrome 110.
-2. **Rotating Proxies (Webshare.io):** The scraper maintains a pool of private datacenter proxies and randomly selects a proxy for each internal API request.
+To bypass aggressive Cloudflare protections and IP bans (e.g., `403 Forbidden` and `429 Too Many Requests`), this scraper implements:
+1. **TLS Fingerprint Impersonation:** Uses `curl_cffi` to perfectly mimic the TLS fingerprint of Chrome 124.
+2. **Tor Network Proxy (Recommended / Free):** Routes requests via a local Tor SOCKS5 proxy with automatic IP rotation when requests fail.
+3. **Rotating Webshare.io Proxies (Backup):** Optionally falls back to Webshare static proxies when Tor is disabled.
 
-**Registered Proxy Details:**
-- **Provider:** Webshare.io
-- **Registered Account:** `smlcodes@gmail.com`
-- **Configuration:** Proxies are hardcoded directly into `scraper.py` inside the `WEBSHARE_PROXIES` list.
+---
+
+### Tor Network Setup (TOR_ENABLED=true)
+
+When `TOR_ENABLED=true` is set in your `.env` file, the scraper defaults to proxying all traffic via Tor:
+* **SOCKS5 Proxy Port:** `127.0.0.1:9050`
+* **Control Port (for IP rotation):** `127.0.0.1:9051`
+
+#### Configuration Requirements:
+To allow the Python backend to rotate the Tor IP dynamically, you must enable Tor's `ControlPort` in your Tor configuration file (`torrc`):
+* **macOS Path:** `/opt/homebrew/etc/tor/torrc` (or `/usr/local/etc/tor/torrc`)
+* **Ubuntu Path:** `/etc/tor/torrc`
+
+Add or uncomment the following lines in `torrc`:
+```text
+ControlPort 9051
+CookieAuthentication 0
+```
+Then restart the Tor service:
+* **macOS:** `brew services restart tor`
+* **Ubuntu:** `sudo systemctl restart tor`
+
+When a request to `district.in` fails, the `ProxyManager` sends a `NEWNYM` signal to the ControlPort (`9051`), forcing Tor to switch to a new exit node IP before retrying.
+
+---
+
+### Webshare Static Proxies Fallback (TOR_ENABLED=false)
+
+When Tor is disabled (`TOR_ENABLED=false` or unset) and the `WEBSHARE_PROXIES` environment variable is defined in `.env`, the scraper will randomly rotate through these static proxies:
+* **Format:** Comma-separated list of `ip:port:user:pass` strings.
+* **Fallback Behavior:** If neither Tor nor Webshare is configured, the scraper defaults to sending direct requests (no proxy).
 
 ---
 
