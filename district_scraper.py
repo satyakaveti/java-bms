@@ -21,7 +21,8 @@ import ssl
 class ProxyManager:
     def __init__(self):
         self.lock = threading.Lock()
-        self.proxies = set()
+        self.raw_proxies = set()
+        self.working_proxies = []
         self.bad_proxies = set()
         self.sources = [
             "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country=all&ssl=yes&anonymity=elite",
@@ -29,24 +30,79 @@ class ProxyManager:
             "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
             "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt"
         ]
+        self.is_static = False
         
         env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
         if env_proxies:
             self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()]
-            self.proxies.update(self.static_proxies)
+            self.working_proxies = list(self.static_proxies)
             self.is_static = True
             print(f"Loaded {len(self.static_proxies)} static proxies from WEBSHARE_PROXIES env.")
         else:
             self.static_proxies = []
             self.is_static = False
-            self.load_more_proxies()
+            # Start background validator daemon thread
+            threading.Thread(target=self._background_loader_and_validator, daemon=True).start()
 
-    def load_more_proxies(self):
-        if self.is_static:
+    def _background_loader_and_validator(self):
+        # Initial raw proxies load
+        self.load_more_raw_proxies()
+        
+        while True:
+            try:
+                with self.lock:
+                    num_working = len(self.working_proxies)
+                    num_raw = len(self.raw_proxies)
+                
+                # Maintain at least 30 working proxies
+                if num_working < 30:
+                    if num_raw < 50:
+                        self.load_more_raw_proxies()
+                    
+                    with self.lock:
+                        batch = list(self.raw_proxies)[:100]
+                        for p in batch:
+                            self.raw_proxies.discard(p)
+                    
+                    if batch:
+                        from concurrent.futures import ThreadPoolExecutor
+                        with ThreadPoolExecutor(max_workers=20) as executor:
+                            executor.map(self.validate_one_proxy, batch)
+            except Exception as e:
+                print(f"Error in background proxy validator loop: {e}")
+            
+            time.sleep(5)
+
+    def validate_one_proxy(self, proxy_str):
+        parts = proxy_str.split(":")
+        if len(parts) != 2:
             return
+        ip, port = parts
+        proxy_url = f"http://{ip}:{port}"
+        proxies = {"http": proxy_url, "https": proxy_url}
+        
+        try:
+            res = requests.get(
+                "https://www.district.in/movies/hyderabad",
+                proxies=proxies,
+                timeout=4,
+                impersonate="chrome124"
+            )
+            if res.status_code == 200:
+                with self.lock:
+                    if proxy_str not in self.bad_proxies and proxy_str not in self.working_proxies:
+                        self.working_proxies.append(proxy_str)
+                        print(f"Verified working proxy: {proxy_str}. Total working: {len(self.working_proxies)}")
+            else:
+                with self.lock:
+                    self.bad_proxies.add(proxy_str)
+        except Exception:
+            with self.lock:
+                self.bad_proxies.add(proxy_str)
+
+    def load_more_raw_proxies(self):
         print("Fetching free proxies programmatically from multiple sources...")
         new_proxies = set()
-        
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
@@ -58,31 +114,39 @@ class ProxyManager:
                     text = response.read().decode('utf-8', errors='ignore')
                     found = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{2,5}\b', text)
                     for p in found:
-                        if p not in self.bad_proxies:
+                        with self.lock:
+                            is_bad = p in self.bad_proxies
+                            is_working = p in self.working_proxies
+                        if not is_bad and not is_working:
                             new_proxies.add(p)
             except Exception as e:
                 print(f"Failed to fetch proxies from {url}: {e}")
                 
-        self.proxies.update(new_proxies)
-        print(f"Successfully loaded {len(self.proxies)} unique free proxies (Total bad proxies tracked: {len(self.bad_proxies)}).")
+        with self.lock:
+            self.raw_proxies.update(new_proxies)
+            print(f"Loaded {len(new_proxies)} raw proxies. Total raw pool: {len(self.raw_proxies)}")
 
     def get_proxy(self):
         with self.lock:
-            if not self.is_static and len(self.proxies) < 15:
-                self.load_more_proxies()
-            if not self.proxies:
-                return None
-            return random.choice(list(self.proxies))
+            if self.is_static:
+                if not self.working_proxies:
+                    return None
+                return random.choice(self.working_proxies)
+            
+            if self.working_proxies:
+                return random.choice(self.working_proxies)
+            if self.raw_proxies:
+                return random.choice(list(self.raw_proxies))
+            return None
 
     def report_failure(self, proxy_str):
         with self.lock:
-            if proxy_str in self.proxies:
-                self.proxies.remove(proxy_str)
+            if proxy_str in self.working_proxies:
+                self.working_proxies.remove(proxy_str)
+            if proxy_str in self.raw_proxies:
+                self.raw_proxies.discard(proxy_str)
             self.bad_proxies.add(proxy_str)
-            if self.is_static:
-                print(f"Static proxy {proxy_str} failed. Remaining: {len(self.proxies)}")
-            else:
-                print(f"Free proxy {proxy_str} marked as dead. Remaining active proxies: {len(self.proxies)}")
+            print(f"Proxy {proxy_str} marked as dead. Working: {len(self.working_proxies)}, Raw: {len(self.raw_proxies)}")
 
 proxy_manager = ProxyManager()
 
@@ -126,7 +190,7 @@ HEADERS_DISTRICT = {
     'x-is-movies-supported': 'true'
 }
 
-def post_with_retry(url, headers, json_data, retries=10):
+def post_with_retry(url, headers, json_data, retries=15):
     for i in range(retries):
         proxy_str, proxy = get_random_proxy()
         print(f"    -> [POST] Calling API (Attempt {i+1}/{retries}): {url} via {proxy}")
@@ -137,7 +201,7 @@ def post_with_retry(url, headers, json_data, retries=10):
                 json=json_data,
                 impersonate="chrome124", 
                 proxies=proxy,
-                timeout=30
+                timeout=10
             )
             if res.status_code in [404, 400]:
                 return res
@@ -150,7 +214,7 @@ def post_with_retry(url, headers, json_data, retries=10):
                 raise e
             time.sleep(random.uniform(0.5, 1.5))
 
-def get_with_retry(url, headers, retries=10):
+def get_with_retry(url, headers, retries=15):
     for i in range(retries):
         proxy_str, proxy = get_random_proxy()
         print(f"    -> [GET] Calling API (Attempt {i+1}/{retries}): {url} via {proxy}")
@@ -160,7 +224,7 @@ def get_with_retry(url, headers, retries=10):
                 headers=headers, 
                 impersonate="chrome124", 
                 proxies=proxy,
-                timeout=30,
+                timeout=10,
                 allow_redirects=True
             )
             if res.status_code in [404, 400]:
