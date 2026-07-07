@@ -129,45 +129,70 @@ def upsert_show_and_record_metric(show_id, theater_id, movie_id, screen_name, sh
         show_date = excluded.show_date
     ''', (show_id, theater_id, movie_id, screen_name, show_time, show_date))
     
-    # Fetch the latest metric for this show to see if it changed
+    # Fetch all metrics for this show
     cursor.execute('''
-    SELECT capacity, occupancy, net_collection 
+    SELECT metric_id, capacity, occupancy, net_collection 
     FROM show_metrics 
     WHERE show_id = %s 
-    ORDER BY metric_id DESC LIMIT 1
+    ORDER BY metric_id DESC
     ''', (show_id,))
-    latest = cursor.fetchone()
+    metrics = cursor.fetchall()
     
-    if latest:
+    now_utc = datetime.datetime.utcnow().isoformat()
+    
+    if metrics:
+        latest = metrics[0]
+        metric_id = latest['metric_id']
+        
         old_cap = latest['capacity']
         old_occ = latest['occupancy']
         old_net = float(latest['net_collection']) if latest['net_collection'] is not None else 0.0
         new_net = float(net_collection) if net_collection is not None else 0.0
         
-        # If nothing changed, we skip inserting a duplicate record
-        if old_cap == capacity and old_occ == occupancy and abs(old_net - new_net) < 0.01:
-            conn.commit()
-            conn.close()
-            return
-
-    now_utc = datetime.datetime.utcnow().isoformat()
-    cursor.execute('''
-    INSERT INTO show_metrics (show_id, timestamp, capacity, occupancy, net_collection)
-    VALUES (%s, %s, %s, %s, %s)
-    RETURNING metric_id
-    ''', (show_id, now_utc, capacity, occupancy, net_collection))
-    
-    metric_id = cursor.fetchone()['metric_id']
-    
-    if price_breakdown:
-        price_records = []
-        for price, stats in price_breakdown.items():
-            price_records.append((metric_id, price, stats['capacity'], stats['occupancy']))
+        changed = not (old_cap == capacity and old_occ == occupancy and abs(old_net - new_net) < 0.01)
+        
+        if changed:
+            cursor.execute('''
+            UPDATE show_metrics 
+            SET timestamp = %s, capacity = %s, occupancy = %s, net_collection = %s
+            WHERE metric_id = %s
+            ''', (now_utc, capacity, occupancy, net_collection, metric_id))
             
-        cursor.executemany('''
-        INSERT INTO show_metric_prices (metric_id, ticket_price, capacity, occupancy)
-        VALUES (%s, %s, %s, %s)
-        ''', price_records)
+            cursor.execute('DELETE FROM show_metric_prices WHERE metric_id = %s', (metric_id,))
+            if price_breakdown:
+                price_records = []
+                for price, stats in price_breakdown.items():
+                    price_records.append((metric_id, price, stats['capacity'], stats['occupancy']))
+                if price_records:
+                    cursor.executemany('''
+                    INSERT INTO show_metric_prices (metric_id, ticket_price, capacity, occupancy)
+                    VALUES (%s, %s, %s, %s)
+                    ''', price_records)
+                
+        # Clean up historical duplicates to save space!
+        if len(metrics) > 1:
+            old_metric_ids = [m['metric_id'] for m in metrics[1:]]
+            placeholders = ','.join(['%s'] * len(old_metric_ids))
+            cursor.execute(f'DELETE FROM show_metric_prices WHERE metric_id IN ({placeholders})', old_metric_ids)
+            cursor.execute(f'DELETE FROM show_metrics WHERE metric_id IN ({placeholders})', old_metric_ids)
+            
+    else:
+        cursor.execute('''
+        INSERT INTO show_metrics (show_id, timestamp, capacity, occupancy, net_collection)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING metric_id
+        ''', (show_id, now_utc, capacity, occupancy, net_collection))
+        metric_id = cursor.fetchone()['metric_id']
+        
+        if price_breakdown:
+            price_records = []
+            for price, stats in price_breakdown.items():
+                price_records.append((metric_id, price, stats['capacity'], stats['occupancy']))
+            if price_records:
+                cursor.executemany('''
+                INSERT INTO show_metric_prices (metric_id, ticket_price, capacity, occupancy)
+                VALUES (%s, %s, %s, %s)
+                ''', price_records)
     
     conn.commit()
     conn.close()
