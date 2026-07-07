@@ -465,14 +465,37 @@ def _send_scraper_email(status, start_time, end_time, summary_data, error_log=No
     payload = {
         "to": "smlcodes@gmail.com",
         "subject": subject,
-        "body": body
+        "body": body,
+        "isHtml": True
     }
     
-    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
+    headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    json_data = json.dumps(payload)
+    
+    curl_cmd = f"curl -X POST '{url}' -H 'Content-Type: application/json' -H 'User-Agent: {headers['User-Agent']}' -d '{json_data}'"
+    print(f"\n[Email] Executing Request:\n{curl_cmd}\n")
+    
+    req = urllib.request.Request(url, data=json_data.encode('utf-8'), headers=headers)
+    
+    stage = "Start" if status == "STARTED" else "END"
     try:
-        urllib.request.urlopen(req, timeout=10)
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        urllib.request.urlopen(req, timeout=10, context=ctx)
+        
+        print("\n======================")
+        print(f"Schedular {stage} - Mail Status: SUCCESS")
+        print("=====================\n")
     except Exception as e:
         print(f"Failed to send email: {e}")
+        print("\n======================")
+        print(f"Schedular {stage} - Mail Status: FAILED")
+        print("=====================\n")
 
 @app.post("/api/v1/district/full-run", status_code=202)
 def full_run_sync(req: FullRunRequest, background_tasks: BackgroundTasks):

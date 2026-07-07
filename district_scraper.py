@@ -21,7 +21,12 @@ def load_free_proxies():
         print("Fetching free proxies programmatically...")
         url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country=all&ssl=yes&anonymity=elite"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=10) as response:
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
             text = response.read().decode('utf-8')
             proxies = text.strip().split("\r\n")
             valid_proxies = [p for p in proxies if p][:100] # Grab top 100
