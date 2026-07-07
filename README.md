@@ -476,220 +476,28 @@ After creating it, make sure to generate an API Token in the Cloudflare dashboar
 
 
 
-### MOVIE- day-wise-breakdown
-Need to write an API like below
-http://127.0.0.1:8000/api/v1/analytics/day-wise-breakdown-by-tollybo-movie-id?tollybo_movie_id=3376&date=2026-06-30
+ ## VM DEPLOYEMENT
 
-Should give response like below with  day-wise-breakdown, region, city, theater, show wise strucure data
-```
-{
-"tollybo_movie_id": 3376,
-"movie_id": 123456,
-"movie_name": "Peddi",
-"date": "2026-06-30",
-
-"total_collection": 2543750,
-"total_theaters_count": 24,
-"total_show_count": 118,
-"occupancy_percentage": 41.8,
-
-"regions": [
-{
-"state": "Telangana",
-
-      "total_collection": 1854200,
-      "total_theaters_count": 15,
-      "total_show_count": 76,
-      "occupancy_percentage": 46.2,
-
-      "cities": [
-        {
-          "city": "Hyderabad",
-
-          "total_collection": 1453600,
-          "total_theaters_count": 10,
-          "total_show_count": 52,
-          "occupancy_percentage": 48.5,
-
-          "theaters": [
-            {
-              "theater_id": "TH001",
-              "theater_name": "INOX GSM Mall, Madinaguda",
-
-              "total_collection": 235400,
-              "total_show_count": 2,
-              "occupancy_percentage": 42.8,
-
-              "shows": [
-                {
-                  "show_id": "83446",
-                  "screen_name": "SCREEN 1",
-                  "show_date": "2026-06-30",
-                  "show_time": "2026-06-30T08:00:00",
-                  "show_time_ist": "01:30 PM",
-
-                  "capacity": 386,
-                  "occupancy": 6,
-                  "total_collection": 1350,
-
-                  "is_finalized": false,
-                  "last_updated": "2026-06-30T08:02:13",
-
-                  "price_capacity_breakdown": [
-                    {
-                      "price": 225,
-                      "capacity": 373,
-                      "occupancy": 6
-                    },
-                    {
-                      "price": 350,
-                      "capacity": 13,
-                      "occupancy": 0
-                    }
-                  ]
-                },
-                {
-                  "show_id": "83457",
-                  "screen_name": "SCREEN 2",
-                  "show_date": "2026-06-30",
-                  "show_time": "2026-06-30T10:20:00",
-                  "show_time_ist": "03:50 PM",
-
-                  "capacity": 304,
-                  "occupancy": 37,
-                  "total_collection": 9950,
-
-                  "is_finalized": false,
-                  "last_updated": "2026-06-30T08:02:15",
-
-                  "price_capacity_breakdown": [
-                    {
-                      "price": 225,
-                      "capacity": 287,
-                      "occupancy": 24
-                    },
-                    {
-                      "price": 350,
-                      "capacity": 17,
-                      "occupancy": 13
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "theater_id": "TH002",
-              "theater_name": "AMB Cinemas",
-
-              "total_collection": 198500,
-              "total_show_count": 3,
-              "occupancy_percentage": 55.1,
-
-              "shows": [
-                {
-                  "show_id": "83510",
-                  "screen_name": "SCREEN 3",
-                  "show_date": "2026-06-30",
-                  "show_time": "2026-06-30T11:00:00",
-                  "show_time_ist": "11:00 AM",
-
-                  "capacity": 280,
-                  "occupancy": 132,
-                  "total_collection": 31250,
-
-                  "is_finalized": false,
-                  "last_updated": "2026-06-30T10:45:00",
-
-                  "price_capacity_breakdown": [
-                    {
-                      "price": 250,
-                      "capacity": 280,
-                      "occupancy": 132
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "city": "Warangal",
-
-          "total_collection": 400600,
-          "total_theaters_count": 5,
-          "total_show_count": 24,
-          "occupancy_percentage": 39.4,
-
-          "theaters": [
-            {
-              "theater_id": "TH101",
-              "theater_name": "Asian Cine Square",
-
-              "total_collection": 96500,
-              "total_show_count": 2,
-              "occupancy_percentage": 36.8,
-
-              "shows": []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "state": "Andhra Pradesh",
-
-      "total_collection": 689550,
-      "total_theaters_count": 9,
-      "total_show_count": 42,
-      "occupancy_percentage": 36.7,
-
-      "cities": [
-        {
-          "city": "Vijayawada",
-
-          "total_collection": 420500,
-          "total_theaters_count": 5,
-          "total_show_count": 20,
-          "occupancy_percentage": 38.4,
-
-          "theaters": [
-            {
-              "theater_id": "TH201",
-              "theater_name": "PVP Cinemas",
-
-              "total_collection": 152000,
-              "total_show_count": 2,
-              "occupancy_percentage": 44.5,
-
-              "shows": []
-            }
-          ]
-        },
-        {
-          "city": "Visakhapatnam",
-
-          "total_collection": 269050,
-          "total_theaters_count": 4,
-          "total_show_count": 22,
-          "occupancy_percentage": 34.2,
-
-          "theaters": [
-            {
-              "theater_id": "TH202",
-              "theater_name": "INOX CMR Central",
-
-              "total_collection": 98500,
-              "total_show_count": 2,
-              "occupancy_percentage": 31.8,
-
-              "shows": []
-            }
-          ]
-        }
-      ]
-    }
-]
-}
+1.Login to VM  
+```text
+cd /Users/satyakaveti/Desktop/dump
+ssh -i ssh-key.key ubuntu@129.159.225.102
 ```
 
-Please formate strcute aas your wish , but we need this kind of data
+
+2.Deployement steps  
+```bash
+ 
+cd /home/ubuntu/java-bms
+
+git fetch origin
+git checkout main
+git reset --hard origin/main
+git pull
+
+bash deploy.sh
+
+sudo journalctl -u fastapi-app.service -f
+
+tail -1000f app.log
+```bash
