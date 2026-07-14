@@ -23,6 +23,7 @@ class ProxyManager:
         self.tor_enabled = os.environ.get("TOR_ENABLED", "false").lower() == "true"
         env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
         self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()] if env_proxies else []
+        self._last_health_check = 0
         
         if self.tor_enabled:
             print("ProxyManager: Tor proxy enabled (socks5h://127.0.0.1:9050)")
@@ -30,6 +31,21 @@ class ProxyManager:
             print(f"ProxyManager: Webshare static proxies enabled ({len(self.static_proxies)} proxies loaded)")
         else:
             print("ProxyManager: Direct requests (No proxy)")
+
+    def check_tor_health(self):
+        if not self.tor_enabled:
+            return True
+        try:
+            # Fast endpoint to verify if the Tor network proxy can fetch a simple page within 5s
+            res = requests.get(
+                "https://icanhazip.com",
+                proxies={"http": "socks5h://127.0.0.1:9050", "https": "socks5h://127.0.0.1:9050"},
+                timeout=5,
+                impersonate="chrome124"
+            )
+            return res.status_code == 200
+        except Exception:
+            return False
 
     def rotate_tor_ip(self):
         if not self.tor_enabled:
@@ -54,6 +70,13 @@ class ProxyManager:
 
     def get_proxy(self):
         if self.tor_enabled:
+            now = time.time()
+            # Verify Tor health if it has been more than 60 seconds since the last check
+            if now - self._last_health_check > 60:
+                self._last_health_check = now
+                if not self.check_tor_health():
+                    print("Tor proxy health check failed. Rotating IP before request...")
+                    self.rotate_tor_ip()
             return "socks5h://127.0.0.1:9050"
         if self.static_proxies:
             return random.choice(self.static_proxies)
@@ -78,7 +101,7 @@ def get_random_proxy():
     
     if proxy_str.startswith("socks5"):
         return "tor", {"http": proxy_str, "https": proxy_str}
-        
+    
     parts = proxy_str.split(":")
     if len(parts) == 4:
         # Authenticated Proxy (ip:port:user:pass)
@@ -111,13 +134,18 @@ HEADERS_DISTRICT = {
     'x-is-movies-supported': 'true'
 }
 
-def post_with_retry(url, headers, json_data, retries=15):
+def post_with_retry(url, headers, json_data, retries=5):
     for i in range(retries):
-        proxy_str, proxy = get_random_proxy()
-        if i == 0:
-            print(f"    -> [POST] Calling API: {url} via {proxy}")
+        if i >= retries - 2:
+            proxy_str, proxy = None, None
+            print(f"    -> [POST] Falling back to direct request (Attempt {i+1}/{retries}): {url}")
         else:
-            print(f"    -> [POST] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
+            proxy_str, proxy = get_random_proxy()
+            if i == 0:
+                print(f"    -> [POST] Calling API: {url} via {proxy}")
+            else:
+                print(f"    -> [POST] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
+        start_time = time.time()
         try:
             res = requests.post(
                 url, 
@@ -125,8 +153,14 @@ def post_with_retry(url, headers, json_data, retries=15):
                 json=json_data,
                 impersonate="chrome124", 
                 proxies=proxy,
-                timeout=10
+                timeout=30
             )
+            # If successful but took longer than 15s, rotate Tor IP for next requests
+            duration = time.time() - start_time
+            if duration > 15 and proxy_str in ["tor", "socks5h://127.0.0.1:9050"]:
+                print(f"Request took {duration:.2f}s (slow Tor circuit). Rotating IP in background...")
+                proxy_manager.rotate_tor_ip()
+                
             if res.status_code in [404, 400]:
                 return res
             res.raise_for_status()
@@ -138,22 +172,33 @@ def post_with_retry(url, headers, json_data, retries=15):
                 raise e
             time.sleep(random.uniform(0.5, 1.5))
 
-def get_with_retry(url, headers, retries=15):
+def get_with_retry(url, headers, retries=5):
     for i in range(retries):
-        proxy_str, proxy = get_random_proxy()
-        if i == 0:
-            print(f"    -> [GET] Calling API: {url} via {proxy}")
+        if i >= retries - 2:
+            proxy_str, proxy = None, None
+            print(f"    -> [GET] Falling back to direct request (Attempt {i+1}/{retries}): {url}")
         else:
-            print(f"    -> [GET] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
+            proxy_str, proxy = get_random_proxy()
+            if i == 0:
+                print(f"    -> [GET] Calling API: {url} via {proxy}")
+            else:
+                print(f"    -> [GET] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
+        start_time = time.time()
         try:
             res = requests.get(
                 url, 
                 headers=headers, 
                 impersonate="chrome124", 
                 proxies=proxy,
-                timeout=10,
+                timeout=30,
                 allow_redirects=True
             )
+            # If successful but took longer than 15s, rotate Tor IP for next requests
+            duration = time.time() - start_time
+            if duration > 15 and proxy_str in ["tor", "socks5h://127.0.0.1:9050"]:
+                print(f"Request took {duration:.2f}s (slow Tor circuit). Rotating IP in background...")
+                proxy_manager.rotate_tor_ip()
+                
             if res.status_code in [404, 400]:
                 return res
             res.raise_for_status()

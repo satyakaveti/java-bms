@@ -22,6 +22,16 @@ if [ -f /etc/tor/torrc ]; then
     if ! sudo grep -q "^CookieAuthentication 0" /etc/tor/torrc; then
         echo "CookieAuthentication 0" | sudo tee -a /etc/tor/torrc
     fi
+    # Optimize Tor for Indian scraper context (ExitNodes IN, MaxCircuitDirtiness 30)
+    if ! sudo grep -q "^ExitNodes" /etc/tor/torrc; then
+        echo "ExitNodes {in}" | sudo tee -a /etc/tor/torrc
+    fi
+    if ! sudo grep -q "^StrictNodes" /etc/tor/torrc; then
+        echo "StrictNodes 1" | sudo tee -a /etc/tor/torrc
+    fi
+    if ! sudo grep -q "^MaxCircuitDirtiness" /etc/tor/torrc; then
+        echo "MaxCircuitDirtiness 30" | sudo tee -a /etc/tor/torrc
+    fi
     echo "Restarting Tor service..."
     sudo systemctl restart tor
     sudo systemctl enable tor
