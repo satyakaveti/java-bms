@@ -528,4 +528,5 @@ bash deploy.sh
 sudo journalctl -u fastapi-app.service -f
 
 tail -1000f app.log
-```bash
+
+```
