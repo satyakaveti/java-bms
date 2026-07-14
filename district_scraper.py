@@ -21,8 +21,6 @@ import ssl
 class ProxyManager:
     def __init__(self):
         self.proxy_enabled = os.environ.get("PROXY_ENABLED", "false").lower() == "true"
-        env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
-        self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()] if env_proxies else []
         self.free_proxies = []
         self._last_free_proxy_fetch = 0
         
@@ -34,7 +32,7 @@ class ProxyManager:
         self.lock = threading.Lock()
         
         if self.proxy_enabled:
-            print(f"ProxyManager: Proxies enabled (Webshare count: {len(self.static_proxies)})")
+            print("ProxyManager: Proxies enabled (FREE_PROXIES only)")
         else:
             print("ProxyManager: Direct requests (No proxy / Proxy disabled)")
 
@@ -75,8 +73,8 @@ class ProxyManager:
                     self.working_proxy_use_count -= 1
                     return self.last_working_proxy
 
-        # Attempt 2 (index 1): Try verified working proxies pool first
-        if attempt_index == 1:
+        # Attempt 3 (index 2): Try verified working proxies pool first
+        if attempt_index == 2:
             with self.lock:
                 valid_working = [p for p in self.working_proxies_pool if p not in self.blacklisted_proxies]
                 if valid_working:
@@ -93,10 +91,9 @@ class ProxyManager:
                 valid_free = [p for p in self.free_proxies if p not in self.blacklisted_proxies]
                 if valid_free:
                     return random.choice(valid_free)
-            print("Free proxies pool empty or all blacklisted, falling back to Webshare...")
             
-        # Attempt 1 (index 0): Random free proxy
-        elif attempt_index == 0:
+        # Attempts 1 & 2 (index 0, 1): Random free proxy
+        elif attempt_index in [0, 1]:
             now = time.time()
             if not self.free_proxies or (now - self._last_free_proxy_fetch > 300):
                 self.fetch_free_proxies()
@@ -104,14 +101,6 @@ class ProxyManager:
                 valid_free = [p for p in self.free_proxies if p not in self.blacklisted_proxies]
                 if valid_free:
                     return random.choice(valid_free)
-            print("Free proxies pool empty or all blacklisted, falling back to Webshare...")
-            
-        # Attempts 3 & 4 (index 2, 3) or fallback: Webshare Proxies
-        if attempt_index in [2, 3] or (attempt_index in [0, 1] and not self.free_proxies):
-            with self.lock:
-                valid_static = [p for p in self.static_proxies if p not in self.blacklisted_proxies]
-                if valid_static:
-                    return random.choice(valid_static)
                 
         return None
 
@@ -191,7 +180,7 @@ HEADERS_DISTRICT = {
     'x-is-movies-supported': 'true'
 }
 
-def post_with_retry(url, headers, json_data, retries=5):
+def post_with_retry(url, headers, json_data, retries=4):
     for i in range(retries):
         proxy_str, proxy = get_random_proxy(i)
         if not proxy:
@@ -222,7 +211,7 @@ def post_with_retry(url, headers, json_data, retries=5):
                 raise e
             time.sleep(random.uniform(0.5, 1.5))
 
-def get_with_retry(url, headers, retries=5):
+def get_with_retry(url, headers, retries=4):
     for i in range(retries):
         proxy_str, proxy = get_random_proxy(i)
         if not proxy:
