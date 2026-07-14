@@ -50,6 +50,13 @@ class ProxyManager:
     def rotate_tor_ip(self):
         if not self.tor_enabled:
             return False
+            
+        now = time.time()
+        # Cooldown: Tor rate-limits NEWNYM to once every 10 seconds.
+        # Skip rotation if we already sent a NEWNYM signal in the last 12 seconds.
+        if hasattr(self, "_last_rotation_time") and (now - self._last_rotation_time < 12):
+            return False
+            
         try:
             import socket
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -61,6 +68,7 @@ class ProxyManager:
                 response = s.recv(1024)
                 if b'250' in response:
                     print("Tor IP rotated successfully via NEWNYM signal.")
+                    self._last_rotation_time = now
                     time.sleep(1.5)
                     return True
             print(f"Tor rotation signal failed: {response}")
