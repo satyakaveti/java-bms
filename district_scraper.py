@@ -20,81 +20,23 @@ import ssl
 
 class ProxyManager:
     def __init__(self):
-        self.tor_enabled = os.environ.get("TOR_ENABLED", "false").lower() == "true"
+        self.proxy_enabled = os.environ.get("WEBSHARE_PROXY_ENABLED", "false").lower() == "true"
         env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
-        self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()] if env_proxies else []
-        self._last_health_check = 0
+        self.static_proxies = []
         
-        if self.tor_enabled:
-            print("ProxyManager: Tor proxy enabled (socks5h://127.0.0.1:9050)")
-        elif self.static_proxies:
-            print(f"ProxyManager: Webshare static proxies enabled ({len(self.static_proxies)} proxies loaded)")
+        if self.proxy_enabled and env_proxies:
+            self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()]
+            print(f"ProxyManager: Webshare proxies enabled ({len(self.static_proxies)} proxies loaded from .env)")
         else:
-            print("ProxyManager: Direct requests (No proxy)")
-
-    def check_tor_health(self):
-        if not self.tor_enabled:
-            return True
-        try:
-            # Fast endpoint to verify if the Tor network proxy can fetch a simple page within 5s
-            res = requests.get(
-                "https://icanhazip.com",
-                proxies={"http": "socks5h://127.0.0.1:9050", "https": "socks5h://127.0.0.1:9050"},
-                timeout=5,
-                impersonate="chrome124"
-            )
-            return res.status_code == 200
-        except Exception:
-            return False
-
-    def rotate_tor_ip(self):
-        if not self.tor_enabled:
-            return False
-            
-        now = time.time()
-        # Cooldown: Tor rate-limits NEWNYM to once every 10 seconds.
-        # Skip rotation if we already sent a NEWNYM signal in the last 12 seconds.
-        if hasattr(self, "_last_rotation_time") and (now - self._last_rotation_time < 12):
-            return False
-            
-        try:
-            import socket
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(('127.0.0.1', 9051))
-            s.send(b'AUTHENTICATE ""\r\n')
-            response = s.recv(1024)
-            if b'250' in response:
-                s.send(b'SIGNAL NEWNYM\r\n')
-                response = s.recv(1024)
-                if b'250' in response:
-                    print("Tor IP rotated successfully via NEWNYM signal.")
-                    self._last_rotation_time = now
-                    time.sleep(1.5)
-                    return True
-            print(f"Tor rotation signal failed: {response}")
-        except Exception as e:
-            print(f"Failed to connect to Tor ControlPort on port 9051: {e}")
-        return False
+            print("ProxyManager: Direct requests (No proxy / Proxy disabled)")
 
     def get_proxy(self):
-        if self.tor_enabled:
-            now = time.time()
-            # Verify Tor health if it has been more than 60 seconds since the last check
-            if now - self._last_health_check > 60:
-                self._last_health_check = now
-                if not self.check_tor_health():
-                    print("Tor proxy health check failed. Rotating IP before request...")
-                    self.rotate_tor_ip()
-            return "socks5h://127.0.0.1:9050"
-        if self.static_proxies:
+        if self.proxy_enabled and self.static_proxies:
             return random.choice(self.static_proxies)
         return None
 
     def report_failure(self, proxy_str):
-        if self.tor_enabled and (proxy_str == "socks5h://127.0.0.1:9050" or proxy_str == "tor"):
-            print("Tor proxy request failed. Requesting new Tor identity (IP rotation)...")
-            self.rotate_tor_ip()
-        elif proxy_str:
+        if proxy_str:
             print(f"Proxy request failed for static/webshare proxy: {proxy_str}")
 
 proxy_manager = ProxyManager()
@@ -106,9 +48,6 @@ def get_random_proxy():
     proxy_str = proxy_manager.get_proxy()
     if not proxy_str:
         return None, None
-    
-    if proxy_str.startswith("socks5"):
-        return "tor", {"http": proxy_str, "https": proxy_str}
     
     parts = proxy_str.split(":")
     if len(parts) == 4:
@@ -153,7 +92,6 @@ def post_with_retry(url, headers, json_data, retries=5):
                 print(f"    -> [POST] Calling API: {url} via {proxy}")
             else:
                 print(f"    -> [POST] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
-        start_time = time.time()
         try:
             res = requests.post(
                 url, 
@@ -163,12 +101,6 @@ def post_with_retry(url, headers, json_data, retries=5):
                 proxies=proxy,
                 timeout=30
             )
-            # If successful but took longer than 15s, rotate Tor IP for next requests
-            duration = time.time() - start_time
-            if duration > 15 and proxy_str in ["tor", "socks5h://127.0.0.1:9050"]:
-                print(f"Request took {duration:.2f}s (slow Tor circuit). Rotating IP in background...")
-                proxy_manager.rotate_tor_ip()
-                
             if res.status_code in [404, 400]:
                 return res
             res.raise_for_status()
@@ -191,7 +123,6 @@ def get_with_retry(url, headers, retries=5):
                 print(f"    -> [GET] Calling API: {url} via {proxy}")
             else:
                 print(f"    -> [GET] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
-        start_time = time.time()
         try:
             res = requests.get(
                 url, 
@@ -201,12 +132,6 @@ def get_with_retry(url, headers, retries=5):
                 timeout=30,
                 allow_redirects=True
             )
-            # If successful but took longer than 15s, rotate Tor IP for next requests
-            duration = time.time() - start_time
-            if duration > 15 and proxy_str in ["tor", "socks5h://127.0.0.1:9050"]:
-                print(f"Request took {duration:.2f}s (slow Tor circuit). Rotating IP in background...")
-                proxy_manager.rotate_tor_ip()
-                
             if res.status_code in [404, 400]:
                 return res
             res.raise_for_status()
