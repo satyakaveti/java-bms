@@ -28,6 +28,7 @@ class ProxyManager:
         
         # Blacklist and Stickiness
         self.blacklisted_proxies = set()
+        self.working_proxies_pool = []
         self.last_working_proxy = None
         self.working_proxy_use_count = 0
         self.lock = threading.Lock()
@@ -69,12 +70,33 @@ class ProxyManager:
             
         with self.lock:
             # Stickiness check: if a working proxy exists, hasn't been blacklisted, and still has reuse counts left
-            if self.last_working_proxy and self.last_working_proxy not in self.blacklisted_proxies and self.working_proxy_use_count > 0:
-                self.working_proxy_use_count -= 1
-                return self.last_working_proxy
+            if attempt_index == 0:
+                if self.last_working_proxy and self.last_working_proxy not in self.blacklisted_proxies and self.working_proxy_use_count > 0:
+                    self.working_proxy_use_count -= 1
+                    return self.last_working_proxy
 
-        # Attempts 1 & 2 (index 0, 1): Free Proxies
-        if attempt_index in [0, 1]:
+        # Attempt 2 (index 1): Try verified working proxies pool first
+        if attempt_index == 1:
+            with self.lock:
+                valid_working = [p for p in self.working_proxies_pool if p not in self.blacklisted_proxies]
+                if valid_working:
+                    selected = random.choice(valid_working)
+                    self.last_working_proxy = selected
+                    self.working_proxy_use_count = 10
+                    return selected
+            
+            # Fallback to random free proxy if working pool is empty
+            now = time.time()
+            if not self.free_proxies or (now - self._last_free_proxy_fetch > 300):
+                self.fetch_free_proxies()
+            with self.lock:
+                valid_free = [p for p in self.free_proxies if p not in self.blacklisted_proxies]
+                if valid_free:
+                    return random.choice(valid_free)
+            print("Free proxies pool empty or all blacklisted, falling back to Webshare...")
+            
+        # Attempt 1 (index 0): Random free proxy
+        elif attempt_index == 0:
             now = time.time()
             if not self.free_proxies or (now - self._last_free_proxy_fetch > 300):
                 self.fetch_free_proxies()
@@ -99,6 +121,11 @@ class ProxyManager:
         with self.lock:
             print(f"Proxy request failed: {proxy_str}. Blacklisting proxy.")
             self.blacklisted_proxies.add(proxy_str)
+            if proxy_str in self.working_proxies_pool:
+                try:
+                    self.working_proxies_pool.remove(proxy_str)
+                except ValueError:
+                    pass
             if self.last_working_proxy == proxy_str:
                 self.last_working_proxy = None
                 self.working_proxy_use_count = 0
@@ -108,8 +135,10 @@ class ProxyManager:
             return
         with self.lock:
             if proxy_str not in self.blacklisted_proxies:
+                if proxy_str not in self.working_proxies_pool:
+                    print(f"Proxy succeeded: {proxy_str}. Adding to working proxies pool.")
+                    self.working_proxies_pool.append(proxy_str)
                 if self.last_working_proxy != proxy_str:
-                    print(f"Proxy succeeded: {proxy_str}. Locking in for next 10 requests.")
                     self.last_working_proxy = proxy_str
                 self.working_proxy_use_count = 10
 
