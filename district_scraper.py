@@ -20,36 +20,85 @@ import ssl
 
 class ProxyManager:
     def __init__(self):
-        self.proxy_enabled = os.environ.get("WEBSHARE_PROXY_ENABLED", "false").lower() == "true"
+        self.proxy_enabled = os.environ.get("PROXY_ENABLED", "false").lower() == "true"
         env_proxies = os.environ.get("WEBSHARE_PROXIES", "")
-        self.static_proxies = []
+        self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()] if env_proxies else []
+        self.free_proxies = []
+        self._last_free_proxy_fetch = 0
         
-        if self.proxy_enabled and env_proxies:
-            self.static_proxies = [p.strip() for p in env_proxies.split(",") if p.strip()]
-            print(f"ProxyManager: Webshare proxies enabled ({len(self.static_proxies)} proxies loaded from .env)")
+        if self.proxy_enabled:
+            print(f"ProxyManager: Proxies enabled (Webshare count: {len(self.static_proxies)})")
         else:
             print("ProxyManager: Direct requests (No proxy / Proxy disabled)")
 
-    def get_proxy(self):
-        if self.proxy_enabled and self.static_proxies:
-            return random.choice(self.static_proxies)
+    def fetch_free_proxies(self):
+        url = os.environ.get("FREE_PROXIES", "https://cdn.jsdelivr.net/gh/proxyscrape/free-proxy-list@main/proxies/protocols/http/data.txt")
+        try:
+            print(f"Fetching fresh free proxies list from: {url}")
+            res = requests.get(url, timeout=10)
+            if res.status_code == 200:
+                lines = res.text.splitlines()
+                proxies = []
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if not (line.startswith("http://") or line.startswith("https://") or line.startswith("socks")):
+                        line = f"http://{line}"
+                    proxies.append(line)
+                if proxies:
+                    self.free_proxies = proxies
+                    self._last_free_proxy_fetch = time.time()
+                    print(f"Successfully loaded {len(self.free_proxies)} free proxies.")
+                    return
+        except Exception as e:
+            print(f"Error fetching free proxies: {e}")
+            
+        if not self.free_proxies:
+            self.free_proxies = []
+
+    def get_proxy(self, attempt_index):
+        if not self.proxy_enabled:
+            return None
+            
+        # Attempts 1 & 2 (index 0, 1): Free Proxies
+        if attempt_index in [0, 1]:
+            now = time.time()
+            # Fetch / refresh free proxies if empty or older than 5 minutes
+            if not self.free_proxies or (now - self._last_free_proxy_fetch > 300):
+                self.fetch_free_proxies()
+            if self.free_proxies:
+                return random.choice(self.free_proxies)
+            print("Free proxies pool empty, falling back to Webshare...")
+            
+        # Attempts 3 & 4 (index 2, 3) or fallback: Webshare Proxies
+        if attempt_index in [2, 3] or (attempt_index in [0, 1] and not self.free_proxies):
+            if self.static_proxies:
+                return random.choice(self.static_proxies)
+                
+        # Attempt 5 (index 4) and beyond: Direct call (None)
         return None
 
     def report_failure(self, proxy_str):
         if proxy_str:
-            print(f"Proxy request failed for static/webshare proxy: {proxy_str}")
+            print(f"Proxy request failed: {proxy_str}")
 
 proxy_manager = ProxyManager()
 
 def print_curl_request(method, url, headers=None, json_data=None):
     print(f"{method} - {url}")
 
-def get_random_proxy():
-    proxy_str = proxy_manager.get_proxy()
+def get_random_proxy(attempt_index):
+    proxy_str = proxy_manager.get_proxy(attempt_index)
     if not proxy_str:
         return None, None
     
-    parts = proxy_str.split(":")
+    if proxy_str.startswith("http://") or proxy_str.startswith("https://"):
+        cleaned = proxy_str.replace("http://", "").replace("https://", "")
+        parts = cleaned.split(":")
+    else:
+        parts = proxy_str.split(":")
+        
     if len(parts) == 4:
         # Authenticated Proxy (ip:port:user:pass)
         ip, port, user, pwd = parts
@@ -59,6 +108,8 @@ def get_random_proxy():
         ip, port = parts
         proxy_url = f"http://{ip}:{port}"
     else:
+        if proxy_str.startswith("http"):
+            return proxy_str, {"http": proxy_str, "https": proxy_str}
         return None, None
         
     return proxy_str, {"http": proxy_url, "https": proxy_url}
@@ -83,15 +134,11 @@ HEADERS_DISTRICT = {
 
 def post_with_retry(url, headers, json_data, retries=5):
     for i in range(retries):
-        if i >= retries - 2:
-            proxy_str, proxy = None, None
+        proxy_str, proxy = get_random_proxy(i)
+        if not proxy:
             print(f"    -> [POST] Falling back to direct request (Attempt {i+1}/{retries}): {url}")
         else:
-            proxy_str, proxy = get_random_proxy()
-            if i == 0:
-                print(f"    -> [POST] Calling API: {url} via {proxy}")
-            else:
-                print(f"    -> [POST] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
+            print(f"    -> [POST] Calling API: {url} via {proxy_str} (Attempt {i+1}/{retries})")
         try:
             res = requests.post(
                 url, 
@@ -114,15 +161,11 @@ def post_with_retry(url, headers, json_data, retries=5):
 
 def get_with_retry(url, headers, retries=5):
     for i in range(retries):
-        if i >= retries - 2:
-            proxy_str, proxy = None, None
+        proxy_str, proxy = get_random_proxy(i)
+        if not proxy:
             print(f"    -> [GET] Falling back to direct request (Attempt {i+1}/{retries}): {url}")
         else:
-            proxy_str, proxy = get_random_proxy()
-            if i == 0:
-                print(f"    -> [GET] Calling API: {url} via {proxy}")
-            else:
-                print(f"    -> [GET] Retrying API (Attempt {i+1}/{retries}): {url} via {proxy}")
+            print(f"    -> [GET] Calling API: {url} via {proxy_str} (Attempt {i+1}/{retries})")
         try:
             res = requests.get(
                 url, 
