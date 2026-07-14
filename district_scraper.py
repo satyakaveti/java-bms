@@ -26,6 +26,12 @@ class ProxyManager:
         self.free_proxies = []
         self._last_free_proxy_fetch = 0
         
+        # Blacklist and Stickiness
+        self.blacklisted_proxies = set()
+        self.last_working_proxy = None
+        self.working_proxy_use_count = 0
+        self.lock = threading.Lock()
+        
         if self.proxy_enabled:
             print(f"ProxyManager: Proxies enabled (Webshare count: {len(self.static_proxies)})")
         else:
@@ -61,27 +67,51 @@ class ProxyManager:
         if not self.proxy_enabled:
             return None
             
+        with self.lock:
+            # Stickiness check: if a working proxy exists, hasn't been blacklisted, and still has reuse counts left
+            if self.last_working_proxy and self.last_working_proxy not in self.blacklisted_proxies and self.working_proxy_use_count > 0:
+                self.working_proxy_use_count -= 1
+                return self.last_working_proxy
+
         # Attempts 1 & 2 (index 0, 1): Free Proxies
         if attempt_index in [0, 1]:
             now = time.time()
-            # Fetch / refresh free proxies if empty or older than 5 minutes
             if not self.free_proxies or (now - self._last_free_proxy_fetch > 300):
                 self.fetch_free_proxies()
-            if self.free_proxies:
-                return random.choice(self.free_proxies)
-            print("Free proxies pool empty, falling back to Webshare...")
+            with self.lock:
+                valid_free = [p for p in self.free_proxies if p not in self.blacklisted_proxies]
+                if valid_free:
+                    return random.choice(valid_free)
+            print("Free proxies pool empty or all blacklisted, falling back to Webshare...")
             
         # Attempts 3 & 4 (index 2, 3) or fallback: Webshare Proxies
         if attempt_index in [2, 3] or (attempt_index in [0, 1] and not self.free_proxies):
-            if self.static_proxies:
-                return random.choice(self.static_proxies)
+            with self.lock:
+                valid_static = [p for p in self.static_proxies if p not in self.blacklisted_proxies]
+                if valid_static:
+                    return random.choice(valid_static)
                 
-        # Attempt 5 (index 4) and beyond: Direct call (None)
         return None
 
     def report_failure(self, proxy_str):
-        if proxy_str:
-            print(f"Proxy request failed: {proxy_str}")
+        if not proxy_str:
+            return
+        with self.lock:
+            print(f"Proxy request failed: {proxy_str}. Blacklisting proxy.")
+            self.blacklisted_proxies.add(proxy_str)
+            if self.last_working_proxy == proxy_str:
+                self.last_working_proxy = None
+                self.working_proxy_use_count = 0
+
+    def report_success(self, proxy_str):
+        if not proxy_str:
+            return
+        with self.lock:
+            if proxy_str not in self.blacklisted_proxies:
+                if self.last_working_proxy != proxy_str:
+                    print(f"Proxy succeeded: {proxy_str}. Locking in for next 10 requests.")
+                    self.last_working_proxy = proxy_str
+                self.working_proxy_use_count = 10
 
 proxy_manager = ProxyManager()
 
@@ -149,8 +179,12 @@ def post_with_retry(url, headers, json_data, retries=5):
                 timeout=30
             )
             if res.status_code in [404, 400]:
+                if proxy_str:
+                    proxy_manager.report_success(proxy_str)
                 return res
             res.raise_for_status()
+            if proxy_str:
+                proxy_manager.report_success(proxy_str)
             return res
         except Exception as e:
             if proxy_str:
@@ -176,8 +210,12 @@ def get_with_retry(url, headers, retries=5):
                 allow_redirects=True
             )
             if res.status_code in [404, 400]:
+                if proxy_str:
+                    proxy_manager.report_success(proxy_str)
                 return res
             res.raise_for_status()
+            if proxy_str:
+                proxy_manager.report_success(proxy_str)
             return res
         except Exception as e:
             if proxy_str:
