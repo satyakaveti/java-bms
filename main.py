@@ -96,6 +96,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+async def health_check():
+    db_status = "UP"
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        conn.close()
+    except Exception as e:
+        db_status = "DOWN"
+        
+    return {
+        "status": "UP",
+        "database": db_status
+    }
+
 async def run_scheduler():
     while True:
         try:
